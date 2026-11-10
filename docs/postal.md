@@ -15,6 +15,8 @@ Add an event webhook for MessageSent, MessageDelayed, MessageDeliveryFailed, Mes
 
 After exact-byte authentication, event receipts retain only event UUID/type/time and the outgoing Postal message ID/direction. Recipient addresses, subjects, message tokens and bounce content are discarded before storage. A shared Postal server may emit events for the host's existing notification adapter: unmatched IDs receive bounded out-of-order retries and remain isolated from inbox messages. They never cause resubmission of notification mail.
 
+Postal 3.3.7 also emits delivery events for incoming HTTP deliveries. Their signatures, envelope and IDs are validated and receipts are durably deduplicated, then completed without changing outgoing delivery history or creating messages. Unknown direction values are rejected. This prevents legitimate incoming status callbacks from entering Postal's failure/retry loop.
+
 ## Authentication and rotation
 
 `Postal::HTTP` adds X-Postal-Signature-256 (RSA SHA256 over the exact raw body bytes), a legacy SHA1 signature and a KID. The adapter requires the SHA256 signature and checks only configured PEM public keys. It does not fetch a key from KID, request host or callback URLs. Both incoming sender and webhook service in 3.3.7 use sign:true. Provision the actual Postal signer public key over an authenticated operator channel, compare its fingerprint out of band, then store it in host secret/config management. Public keys are not confidential but their integrity matters.

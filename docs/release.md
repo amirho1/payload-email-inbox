@@ -1,6 +1,6 @@
 # Release guide
 
-Provisional package payload-plugin-mail, alpha 0.1.0-alpha.3. npm name lookup is not ownership. Public npm publication is a separate release step requiring authenticated maintainer destination and credentials; no publish is performed by implementation checks.
+Provisional package payload-plugin-mail, alpha 0.1.0-alpha.4. npm name lookup is not ownership. Public npm publication is a separate release step requiring authenticated maintainer destination and credentials; no publish is performed by implementation checks.
 
 1. Run format/lint/types/unit/real SQLite/packed consumer/browser/accessibility/production build checks; repair failures.
 2. Rehearse host migrations and backup restoration; inspect dependency licenses/security advisories and package contents.

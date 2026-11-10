@@ -517,3 +517,48 @@ it('applies bounded transactional retention only to old closed non-pending corre
   expect((await pruneMail(payload, config, false)).deleted).toBe(0)
   expect((await store.get(store.options.slugs.messages, pending.id)).state).toBe('draft')
 })
+
+it('durably deduplicates and completes incoming delivery events without creating mail', async () => {
+  const before = await payload.count({ collection: 'mail-messages', overrideAccess: true })
+  const body = JSON.stringify({
+    uuid: 'incoming-delivery-event-0001',
+    event: 'MessageSent',
+    timestamp: 123,
+    payload: {
+      message: {
+        id: 321,
+        direction: 'incoming',
+        token: 'synthetic-private-token',
+        subject: 'Unneeded incoming status metadata',
+      },
+    },
+  })
+  await Promise.all(
+    [1, 2].map(async () =>
+      acceptReceipt(
+        store,
+        await request(
+          null,
+          body,
+          new Headers({
+            'X-Postal-Signature-256': sign('sha256', Buffer.from(body), keys.privateKey).toString(
+              'base64',
+            ),
+          }),
+        ),
+        'postal',
+        'event',
+      ),
+    ),
+  )
+  await processMail(payload, options)
+  const receipts = await store.find(store.options.slugs.work, {
+    key: { equals: 'postal:events:event:incoming-delivery-event-0001' },
+  })
+  expect(receipts.docs).toHaveLength(1)
+  expect(receipts.docs[0].state).toBe('done')
+  expect(receipts.docs[0].data).toEqual({})
+  expect(
+    (await payload.count({ collection: 'mail-messages', overrideAccess: true })).totalDocs,
+  ).toBe(before.totalDocs)
+})

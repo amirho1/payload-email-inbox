@@ -64,8 +64,9 @@ export function postalProvider(options: PostalOptions): MailProvider {
       if (!/^[a-zA-Z0-9-]{8,100}$/.test(uuid) || !Number.isFinite(data.timestamp))
         throw new MailError('invalid')
       // Validate supported event and provider ids before accepting durable work.
-      const [event] = parsePostalEvent(data)
+      parsePostalEvent(data)
       const messageKey = data.event === 'MessageBounced' ? 'original_message' : 'message'
+      const message = object(object(data.payload)[messageKey])
       // A shared Postal server also reports unrelated notification mail. Persist only the
       // delivery correlation fields; subjects, recipients and Postal tokens are unnecessary.
       return {
@@ -74,8 +75,8 @@ export function postalProvider(options: PostalOptions): MailProvider {
         body: {
           uuid,
           event: data.event,
-          timestamp: event.timestamp,
-          payload: { [messageKey]: { id: Number(event.providerId), direction: 'outgoing' } },
+          timestamp: data.timestamp,
+          payload: { [messageKey]: { id: message.id, direction: message.direction } },
         },
       }
     },
@@ -271,10 +272,13 @@ export function parsePostalEvent(input: unknown): DeliveryEvent[] {
   if (
     !Number.isSafeInteger(message.id) ||
     Number(message.id) < 1 ||
-    message.direction !== 'outgoing' ||
+    (message.direction !== 'outgoing' && message.direction !== 'incoming') ||
     !Number.isFinite(envelope.timestamp)
   )
     throw new MailError('invalid')
+  // Postal also emits status events for incoming HTTP delivery. Authenticate and deduplicate
+  // those receipts, then complete them without changing outgoing delivery state.
+  if (message.direction === 'incoming') return []
   return [
     { providerId: String(message.id), state: states[event], timestamp: Number(envelope.timestamp) },
   ]

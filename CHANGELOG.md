@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0-alpha.4 — unreleased
+
+- Authenticate and durably deduplicate Postal incoming-delivery status events, then complete them without changing outgoing history or creating correspondence.
+- Verify real SQLite receipt completion and concurrent replay handling for this actual Postal 3.3.7 event shape.
+
 ## 0.1.0-alpha.3 — unreleased
 
 - Keep Compose and conversation actions unavailable until mailbox settings load; show configuration failures and recover through Refresh.
