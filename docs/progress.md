@@ -63,3 +63,5 @@ All implementation, tests, measurements, host integration, push, deployment and 
 - Browser provider is unavailable; native Brave selection also failed. CUA task closed with browser blocker. Owner was asked asynchronously to confirm Gmail receipt/reply when a live test can be sent. Production recipient verification remains required.
 
 - Final full-host rerun: 731 tests across 96 files passed with no skipped tests or unhandled errors. Fresh test DB was aligned using the existing nullable-email schema tool; no production auth changes.
+
+- Library implementation committed and pushed: 018f93898a8da145bead8456286e5037facb554b, amirho1/payload-email-inbox, main and feat/payload-mail. No npm publish. Exact packed artifact metadata is docs/package-artifact.json.
