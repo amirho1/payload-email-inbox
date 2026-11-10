@@ -58,6 +58,8 @@ export function MailInbox({
   }, [hostLanguage])
   const t = language === 'fa' ? fa : en
   const [settings, setSettings] = useState<Settings>()
+  const [settingsError, setSettingsError] = useState('')
+  const settingsRequest = useRef(0)
   const [inbox, setInbox] = useState<Page<Conversation>>()
   const [detail, setDetail] = useState<Detail>()
   const [seed, setSeed] = useState<ComposeSeed>()
@@ -91,9 +93,22 @@ export function MailInbox({
       setLoading(false)
     }
   }, [apiPath, query, fail])
+  const loadSettings = useCallback(async () => {
+    const request = ++settingsRequest.current
+    setSettingsError('')
+    try {
+      const next = await mailRequest<Settings>(`${apiPath}/config`)
+      if (request !== settingsRequest.current) return
+      setSettings(next)
+      setSettingsError('')
+    } catch (e) {
+      if (request === settingsRequest.current)
+        setSettingsError(t[(e as Error).message as keyof typeof t] ?? t.error)
+    }
+  }, [apiPath, t])
   useEffect(() => {
-    void mailRequest<Settings>(`${apiPath}/config`).then(setSettings).catch(fail)
-  }, [apiPath, fail])
+    void loadSettings()
+  }, [loadSettings])
   useEffect(() => {
     const timer = setTimeout(() => void load(), 250)
     return () => clearTimeout(timer)
@@ -144,6 +159,7 @@ export function MailInbox({
     }
   }
   const refresh = async () => {
+    if (!settings) await loadSettings()
     await load()
     if (detail)
       setDetail(
@@ -255,13 +271,14 @@ export function MailInbox({
             <option value="fa">فارسی</option>
           </select>
         </label>
-        <Button className={button} onClick={newDraft}>
+        <Button className={button} onClick={newDraft} disabled={!settings?.mailboxes.length}>
           {t.compose}
         </Button>
       </header>
       {error && <p role="alert">{error}</p>}
+      {settingsError && <p role="alert">{settingsError}</p>}
       <div role="status" aria-live="polite">
-        {loading ? t.loading : ''}
+        {loading || (!settings && !settingsError) ? t.loading : ''}
       </div>
       {!detail && (
         <>
@@ -269,7 +286,7 @@ export function MailInbox({
             className="pm:grid pm:gap-3 pm:sm:grid-cols-2"
             onSubmit={(e) => {
               e.preventDefault()
-              void load()
+              void refresh()
             }}
           >
             <label>
@@ -325,6 +342,7 @@ export function MailInbox({
               <Button
                 key={c.id}
                 className={`${button} pm:grid pm:w-full pm:gap-2 pm:p-4 pm:text-start`}
+                disabled={!settings}
                 onClick={() => void open(c.id)}
               >
                 <strong dir="auto">{c.subject || t.noSubject}</strong>

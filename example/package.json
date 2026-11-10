@@ -9,7 +9,7 @@
     "generate:importmap": "payload generate:importmap"
   },
   "dependencies": {
-    "payload-plugin-mail": "file:../payload-plugin-mail-0.1.0-alpha.2.tgz",
+    "payload-plugin-mail": "file:../payload-plugin-mail-0.1.0-alpha.3.tgz",
     "payload": "3.90.2",
     "@payloadcms/db-sqlite": "3.90.2",
     "@payloadcms/next": "3.90.2",

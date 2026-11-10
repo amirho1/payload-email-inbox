@@ -17,7 +17,7 @@ pnpm install --frozen-lockfile
 pnpm build
 npm pack
 # In the host application:
-pnpm add /path/to/payload-plugin-mail-0.1.0-alpha.2.tgz
+pnpm add /path/to/payload-plugin-mail-0.1.0-alpha.3.tgz
 ```
 
 Add the plugin to `payload.config.ts`; keep the host email adapter and authentication intact:

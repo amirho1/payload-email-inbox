@@ -1,6 +1,6 @@
 {
   "name": "payload-plugin-mail",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "description": "Private staff inbox and durable Postal workflows for Payload CMS",
   "license": "MIT",
   "author": "Amir Hossein Salighedar",

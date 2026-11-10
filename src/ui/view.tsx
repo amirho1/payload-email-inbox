@@ -11,12 +11,21 @@ export async function MailView(
     authorizeMail: (req: PayloadRequest) => boolean | Promise<boolean>
   },
 ) {
-  const { req } = props.initPageResult
+  const { req, permissions, locale, visibleEntities } = props.initPageResult
   if (!req.user || !(await props.authorizeMail(req)))
     return <p role="alert">{req.i18n.language === 'fa' ? 'دسترسی مجاز نیست.' : 'Access denied.'}</p>
   const { MailInbox } = await import('./inbox.js')
   return (
-    <DefaultTemplate {...props} req={req} visibleEntities={props.initPageResult.visibleEntities}>
+    <DefaultTemplate
+      {...props}
+      req={req}
+      permissions={permissions}
+      locale={locale}
+      visibleEntities={{
+        collections: [...visibleEntities.collections],
+        globals: [...visibleEntities.globals],
+      }}
+    >
       <MailInbox
         apiPath={props.apiPath}
         initialLanguage={

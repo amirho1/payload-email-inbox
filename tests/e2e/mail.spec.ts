@@ -43,6 +43,7 @@ for (const language of ['en', 'fa'] as const) {
     await page.goto('/admin/mail')
     if (fa) await page.getByLabel('Interface language').selectOption('fa')
     await expect(page.locator('main.payload-mail')).toHaveAttribute('dir', fa ? 'rtl' : 'ltr')
+    await expect(page.locator('a[href="/admin/collections/users"]')).toBeVisible()
     const id = fa ? 502 : 501
     const subject = `Controlled synthetic ${language} سلام`
     const incoming = {
@@ -184,11 +185,24 @@ for (const language of ['en', 'fa'] as const) {
 test('compose, upload, reply-all, forward, failure retry and unknown-state actions', async ({
   page,
 }) => {
+  let releaseSettings!: () => void
+  const settingsGate = new Promise<void>((resolve) => {
+    releaseSettings = resolve
+  })
+  await page.route('**/api/mail/config', async (route) => {
+    await settingsGate
+    await route.continue()
+  })
   await page.request.post('/api/users/login', {
     data: { email: 'agent@example.com', password: 'Synthetic-password-123!' },
   })
   await page.goto('/admin/mail')
-  await page.getByRole('button', { name: 'Compose', exact: true }).click()
+  const compose = page.getByRole('button', { name: 'Compose', exact: true })
+  await expect(compose).toBeDisabled()
+  releaseSettings()
+  await expect(compose).toBeEnabled()
+  await page.unroute('**/api/mail/config')
+  await compose.click()
   await page.getByLabel('To', { exact: true }).fill('customer@example.net')
   await page.getByLabel('Subject', { exact: true }).fill('[failed] Controlled compose')
   await page.getByLabel('Message', { exact: true }).fill('Synthetic composed message')
@@ -249,4 +263,32 @@ test('anonymous, nonstaff and cross-mailbox REST access denied', async ({ reques
   const list = await (await request.get('/api/mail/inbox')).json()
   expect(list.docs).toEqual([])
   expect((await request.get('/api/mail/attachment/1')).status()).toBe(404)
+})
+
+test('settings transport failure disables compose and Refresh recovers through the real API', async ({
+  page,
+}) => {
+  let recover = false
+  await page.route('**/api/mail/config', async (route) => {
+    if (!recover) await route.abort('failed')
+    else await route.continue()
+  })
+  expect(
+    (
+      await page.request.post('/api/users/login', {
+        data: { email: 'agent@example.com', password: 'Synthetic-password-123!' },
+      })
+    ).status(),
+  ).toBe(200)
+  await page.goto('/admin/mail')
+  const inbox = page.locator('.payload-mail')
+  const compose = page.getByRole('button', { name: 'Compose', exact: true })
+  await expect(inbox.getByRole('alert')).toBeVisible()
+  await expect(compose).toBeDisabled()
+  recover = true
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click()
+  await expect(compose).toBeEnabled()
+  await expect(inbox.getByRole('alert')).toHaveCount(0)
+  await compose.click()
+  await expect(page.getByLabel('To', { exact: true })).toBeVisible()
 })
