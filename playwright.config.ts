@@ -5,6 +5,7 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   timeout: 120000,
+  reporter: process.env.GITHUB_ACTIONS ? [['list'], ['github']] : [['list']],
   use: {
     baseURL: 'http://localhost:4100',
     trace: 'retain-on-failure',
