@@ -64,8 +64,20 @@ export function postalProvider(options: PostalOptions): MailProvider {
       if (!/^[a-zA-Z0-9-]{8,100}$/.test(uuid) || !Number.isFinite(data.timestamp))
         throw new MailError('invalid')
       // Validate supported event and provider ids before accepting durable work.
-      parsePostalEvent(data)
-      return { key: `event:${uuid}`, kind, body: data }
+      const [event] = parsePostalEvent(data)
+      const messageKey = data.event === 'MessageBounced' ? 'original_message' : 'message'
+      // A shared Postal server also reports unrelated notification mail. Persist only the
+      // delivery correlation fields; subjects, recipients and Postal tokens are unnecessary.
+      return {
+        key: `event:${uuid}`,
+        kind,
+        body: {
+          uuid,
+          event: data.event,
+          timestamp: event.timestamp,
+          payload: { [messageKey]: { id: Number(event.providerId), direction: 'outgoing' } },
+        },
+      }
     },
     parseIncoming: parsePostalIncoming,
     parseEvent: parsePostalEvent,

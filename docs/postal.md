@@ -13,6 +13,8 @@ Configure one provider key per Postal server. Add the receiving mailbox identity
 
 Add an event webhook for MessageSent, MessageDelayed, MessageDeliveryFailed, MessageHeld and MessageBounced. Events have the wrapper `{event,timestamp,payload,uuid}`, not just the inner payload shown in some documentation examples. Disable tracking; click/open events are not mail delivery proof and are not supported.
 
+After exact-byte authentication, event receipts retain only event UUID/type/time and the outgoing Postal message ID/direction. Recipient addresses, subjects, message tokens and bounce content are discarded before storage. A shared Postal server may emit events for the host's existing notification adapter: unmatched IDs receive bounded out-of-order retries and remain isolated from inbox messages. They never cause resubmission of notification mail.
+
 ## Authentication and rotation
 
 `Postal::HTTP` adds X-Postal-Signature-256 (RSA SHA256 over the exact raw body bytes), a legacy SHA1 signature and a KID. The adapter requires the SHA256 signature and checks only configured PEM public keys. It does not fetch a key from KID, request host or callback URLs. Both incoming sender and webhook service in 3.3.7 use sign:true. Provision the actual Postal signer public key over an authenticated operator channel, compare its fingerprint out of band, then store it in host secret/config management. Public keys are not confidential but their integrity matters.

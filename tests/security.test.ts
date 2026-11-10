@@ -117,6 +117,37 @@ describe('Postal authenticity and bounded parsing', () => {
       }),
     ).toThrow()
   })
+  it.each(['MessageSent', 'MessageBounced'])(
+    'minimizes authenticated %s receipts before durable storage',
+    async (event) => {
+      const messageKey = event === 'MessageBounced' ? 'original_message' : 'message'
+      const b = Buffer.from(
+        JSON.stringify({
+          uuid: 'event-example-123',
+          event,
+          timestamp: 123,
+          payload: {
+            [messageKey]: {
+              id: 2,
+              direction: 'outgoing',
+              token: 'private-provider-token',
+              to: 'customer@example.net',
+              subject: 'Unrelated notification',
+            },
+            bounce: { subject: 'Private bounce content' },
+          },
+        }),
+      )
+      const receipt = await postal.receive!(b, headers(b), 'event')
+      expect(receipt.body).toEqual({
+        uuid: 'event-example-123',
+        event,
+        timestamp: 123,
+        payload: { [messageKey]: { id: 2, direction: 'outgoing' } },
+      })
+      expect(parsePostalEvent(receipt.body)[0].providerId).toBe('2')
+    },
+  )
 })
 
 describe('malicious HTML and delivery semantics', () => {
