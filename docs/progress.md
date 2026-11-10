@@ -68,3 +68,12 @@ All implementation, tests, measurements, host integration, push, deployment and 
 
 - Latest artifact adds a tested definite failure when Payload has no configured email adapter (console logging is not acceptance). Library tests: 37 passed; final browser run: 4 passed in 50.1 s. Final host run: 731 passed in 109.44 s after rebasing on upstream 5b217c1.
 - Owner restored browser availability. Native Safari verified Gmail signed in as amirhosseinsalighedar@gmail.com, scoped to controlled-test subject search. Recipient observation is now available; no production test has been sent yet. The specialized browser host remains unavailable, but native Safari works.
+
+## Production checkpoint — 2026-11-10 15:59 UTC
+
+- Library pushed on main and feat/payload-mail: e7900b21caba785b8971366d18e2320042c379b9. Host integration pushed at 1a1aa9d5069ee779dbe649b3dd4031cfe82d6e79 before the subsequent upstream merge.
+- Owner directed use of Web-Father/Dokploy or Brave. Native Brave successfully signed in to the established Dokploy instance. Used the existing `moftkhar-app-sqlite-backup-12h` schedule, without changing its script or configuration; did not retry the rejected custom checkpoint command.
+- Schedule dNbPe3yuTfK8dIjYLdILv completed successfully in 34 seconds. Log: `SQLite backup delivered: moftkhar-app-sqlite-20261110T155849Z-111703.zip.gpg`. Reviewed job uses the online SQLite backup API, requires quick_check=ok, includes media/receipts, validates ZIP, and encrypts before delivery through the established backup workflow.
+- Durable encrypted archive: `/etc/dokploy/schedules/moftkhar-backups/moftkhar-app-sqlite-20261110T155849Z-111703.zip.gpg`; SHA-256 e5fc5c2b73db7e1d72c135b6b77e54e02156960199dfa2679c237ff07ee02d67. Archive contents/recovery key remain private. This production archive has not separately been decrypted/restored in this session; the isolated synthetic host restore rehearsal remains the tested restore evidence.
+- Upstream advanced through 7c56ea2 (sitemap and phone fixes). Merged origin/main into the already-pushed integration branch, preserving history without force-push: 367300e1e0ade2a518d37ec7d8f1f30e3b608f87. Combined validation is running. Existing production deployment --WpMSuLE1-9CJzlBgAuu was still running when inspected; do not overlap release or revert newer changes.
+- Backup gate is now satisfied by the established workflow. Deployment, support-route cutover, and controlled production round trip remain pending; no live test sent yet.
