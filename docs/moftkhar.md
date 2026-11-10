@@ -13,3 +13,5 @@ Postal: https://mail.moftkhar.ir, API https://mail.moftkhar.ir/api/v1, organizat
 Expected inbox after successful integration: https://moftkhar.ir/admin/mail. **This is a planned route, not a deployed/verified result.** Expected callbacks with provider key moftkhar-transactional: `/api/mail/postal/moftkhar-transactional/incoming` and `/api/mail/postal/moftkhar-transactional/event`.
 
 Production cutover, route change and controlled round trip remain pending. The SSH automatic approval gate rejected the fresh pre-deployment SQLite backup command, so no deployment was attempted; preserve this gate until a verified checkpoint is provided. Only support@moftkhar.ir and amirhosseinsalighedar@gmail.com are authorized live test correspondents. Do not send customer mail. Recipient Inbox placement needs authorized mailbox access or owner observation; provider acceptance is insufficient.
+
+Native Safari Gmail access was verified after the owner restored it. The authenticated account matches the controlled maintainer inbox. Deployment/round-trip remain pending the backup gate.

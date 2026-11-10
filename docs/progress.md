@@ -50,8 +50,8 @@ All implementation, tests, measurements, host integration, push, deployment and 
 
 ## Release checkpoint — independent work completed, production gate pending
 
-- 36 library tests and four packed-consumer browser journeys pass. Latest consumer production build passes.
-- Full host suite: 731/731 tests, 96 files, 98.04 seconds; no skipped tests or unhandled errors in final run. Host lint has 0 errors/82 existing warnings; types/build pass.
+- 37 library tests and four packed-consumer browser journeys pass. Latest consumer production build passes.
+- Full host suite: 731/731 tests, 96 files, 109.44 seconds; no skipped tests or unhandled errors in final run. Host lint has 0 errors/82 existing warnings; types/build pass.
 - Root dependency audit is clean; fixed earlier vulnerable parser/sanitizer/Nodemailer pins. Permissive dependency/license inventory recorded.
 - Fixed startup coupling by moving mailbox metadata synchronization to explicit post-migration worker ticks. Host onInit is preserved unchanged. Pricing partial-migration replay now passes.
 - Host fresh test DB requires the already-documented nullable-email schema setup. Applied existing authEmailMigration schema mode with its own verified backup ONLY to /tmp test DB. No production auth changes. Fixed one stale checkout unit-test mock at its real payment API boundary; production checkout behavior unchanged.
@@ -65,3 +65,6 @@ All implementation, tests, measurements, host integration, push, deployment and 
 - Final full-host rerun: 731 tests across 96 files passed with no skipped tests or unhandled errors. Fresh test DB was aligned using the existing nullable-email schema tool; no production auth changes.
 
 - Library implementation committed and pushed: 018f93898a8da145bead8456286e5037facb554b, amirho1/payload-email-inbox, main and feat/payload-mail. No npm publish. Exact packed artifact metadata is docs/package-artifact.json.
+
+- Latest artifact adds a tested definite failure when Payload has no configured email adapter (console logging is not acceptance). Library tests: 37 passed; final browser run: 4 passed in 50.1 s. Final host run: 731 passed in 109.44 s after rebasing on upstream 5b217c1.
+- Owner restored browser availability. Native Safari verified Gmail signed in as amirhosseinsalighedar@gmail.com, scoped to controlled-test subject search. Recipient observation is now available; no production test has been sent yet. The specialized browser host remains unavailable, but native Safari works.

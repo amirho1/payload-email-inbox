@@ -2,10 +2,10 @@
   "package": "payload-plugin-mail",
   "version": "0.1.0-alpha.1",
   "tarball": "payload-plugin-mail-0.1.0-alpha.1.tgz",
-  "packedBytes": 40743,
-  "unpackedBytes": 141210,
+  "packedBytes": 40775,
+  "unpackedBytes": 141292,
   "files": 62,
-  "sha256": "3e66836178651225c86382b1e62d44bf892f0ddf292dc70eb8d7653bce989bcf",
-  "implementationCommit": "018f93898a8da145bead8456286e5037facb554b",
+  "sha256": "63f494c4cbac3b2dab8d769c33616c66e451f44cb638a83978af86fd2e88c0f4",
+  "implementationCommit": "0dcc3e35288aa60b0322b3e211536a333763e94e",
   "cleanConsumerPassed": true
 }
