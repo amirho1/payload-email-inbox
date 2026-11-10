@@ -1,6 +1,6 @@
 # Payload Mail progress ledger
 
-## Current checkpoint — alpha.3 validation and cutover pending
+## Current checkpoint — incoming cutover and final event validation
 
 - Deployed image is healthy and its OCI revision is a7ecf24c9f3fb6d7e51ca6fcc875c19dedb253a1 (alpha.2), image ID sha256:66c9b080e6cf259a5dce5d1c8152cb952c7c0b62826542c68a463358d31870d3. This is deployment proof, not final workflow/recipient proof.
 - Alpha.3 fixes a real early-Compose settings race and restores host navigation by forwarding initPageResult.permissions/locale to Payload DefaultTemplate. Configuration transport failures show a recoverable alert; Refresh retries the real API, and stale configuration responses cannot replace newer state.
@@ -101,3 +101,13 @@ All implementation, tests, measurements, host integration, push, deployment and 
 
 - Host alpha.2 integration a00b038ef61010465f6091eb9730398e4959def8 is pushed to main and feat/payload-mail. Preserves b494b42; its seven auth tests pass. Existing queued Dokploy deployment mYtadh0s0MebIWa7ttSjV was still running when inspected. No support-route cutover yet.
 - First actual remote library runs 42854272166 / 42854272036 passed install, format/lint/types, all unit tests and clean consumer initialization; failed at Chromium system-dependency installation, so browser/build steps did not run remotely. ubuntu-latest had migrated to Ubuntu 26, while pinned Playwright 1.58.2 nativeDeps defines Ubuntu 22/24. Pin CI to Ubuntu 24.04 and rerun every check. Updated official actions to verified Node 24 releases pinned by commit; previous Node 20 actions were producing deprecation warnings. This is a runner compatibility correction, not skipped validation.
+
+## Incoming status protocol and live test recovery
+
+- Alpha.3 library CI runs 42860492580 and 42860491333 passed the full workflow on 5463a35. Host full suite passed 734/734 tests, 97 files, 100.83 seconds; restore rehearsal and both production builds pass.
+- Host main e78dd7630a624855c97a4a2c280cd566da1ef23c includes alpha.3 and preserves upstream footer refactor 52f7809. After that merge, host format/lint/types/build passed. Image is published with manifest sha256:0de1fd9a08228bbacf7182d988265c595ca7f856b1413aad15c680ed50577cfa; Dokploy rollout was already active, so no duplicate manual deploy was requested. Verify the running OCI revision before cutover.
+- Latest observed stable app before this rollout: 52f7809186d2c169114be88beaee0c3d7ac6217b, image sha256:9fe988f0f50180788b5ab28da8b319747f5bb570416ce3c996fc6ae7de46d558, healthy. Preserve newer upstream website work.
+- Fresh existing SQLite backup job completed again: moftkhar-app-sqlite-20261110T171012Z-114027.zip.gpg, SHA-256 c3ba7ff5cde252f0d229a5ce09a2c914b1b54318239a538f902f585b97fde5d6. Native schedule deployment MnSKAHkS_5FhPvhnrCvlf; online snapshot check/encrypted delivery succeeded.
+- Retained owner test located through a narrowly filtered read: Postal ID 4, 2026-11-10T16:50:39Z, raw available, not queued. No message body/token exported. Source confirms redelivery uses add_to_message_queue(manual:true), and a message with no stored endpoint resolves the current support route. Queue only ID 4 after readiness/cutover.
+- Running 3.3.7 Delivery.create sends webhooks for incoming HTTP delivery as well as outgoing SMTP. Alpha.4 authenticates/minimizes/deduplicates these legitimate incoming events and completes them without outgoing-history changes. Unknown directions still reject. Real SQLite concurrent replay/completion regression added. Local alpha.4: 41 tests, five browser journeys (46.9 seconds), packed consumer/build, lint/types/format and measured budgets pass. All compiled UI JS files are byte-identical to alpha.3. Remote alpha.4 CI remains to verify.
+- Incoming content can be enabled independently after alpha.3 readiness. Keep delivery-event hook disabled until alpha.4 is verified, then test incoming-event acknowledgement and controlled outbound delivery. No SMTP test sent by agent and no route change yet at this checkpoint.
