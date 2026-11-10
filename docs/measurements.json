@@ -1,0 +1,40 @@
+{
+  "hardware": {
+    "cpu": "Apple M2 Pro",
+    "cores": 10,
+    "memoryBytes": 17179869184,
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "baseline": {
+    "mode": "baseline",
+    "idleRssBytes": 181796864,
+    "node": "v22.23.4"
+  },
+  "enabled": {
+    "mode": "enabled",
+    "idleRssBytes": 190496768,
+    "node": "v22.23.4",
+    "datasetConversations": 1000,
+    "concurrency": 5,
+    "inboxSamples": 50,
+    "inboxP95ms": 11.589958000000024,
+    "sqlStatementsPerInbox": 2,
+    "burstReceipts": 100,
+    "burstMaxAckMs": 8.312875000000076,
+    "burstProcessingMs": 215.31670800000006,
+    "normalizedMessages": 100
+  },
+  "idleRssDeltaBytes": 8699904,
+  "compiledClientGzipBytes": 7948,
+  "compiledCssBytes": 4191,
+  "directRuntimeDependencies": ["mailparser", "nodemailer", "sanitize-html", "zod"],
+  "limits": {
+    "tarballBytes": 153600,
+    "clientGzipBytes": 35840,
+    "cssBytes": 20480,
+    "idleRssDeltaBytes": 52428800,
+    "inboxP95ms": 250,
+    "burstAckMs": 5000
+  }
+}

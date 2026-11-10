@@ -1,0 +1,103 @@
+{
+  "name": "payload-plugin-mail",
+  "version": "0.1.0-alpha.1",
+  "description": "Private staff inbox and durable Postal workflows for Payload CMS",
+  "license": "MIT",
+  "author": "Amir Hossein Salighedar",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/amirho1/payload-email-inbox.git"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md",
+    "README.fa.md",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server/index.d.ts",
+      "default": "./dist/server/index.js"
+    },
+    "./postal": {
+      "types": "./dist/providers/postal.d.ts",
+      "default": "./dist/providers/postal.js"
+    },
+    "./sqlite": {
+      "types": "./dist/server/sqlite.d.ts",
+      "default": "./dist/server/sqlite.js"
+    },
+    "./client": {
+      "types": "./dist/ui/nav.d.ts",
+      "default": "./dist/ui/nav.js"
+    },
+    "./rsc": {
+      "types": "./dist/ui/view.d.ts",
+      "default": "./dist/ui/view.js"
+    },
+    "./styles.css": "./dist/styles.css"
+  },
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "peerDependencies": {
+    "@payloadcms/next": "3.90.2",
+    "@payloadcms/translations": "3.90.2",
+    "@payloadcms/ui": "3.90.2",
+    "payload": "3.90.2",
+    "react": "19.2.6"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && tailwindcss -i src/styles.css -o dist/styles.css --minify && node scripts/scopeCss.mjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src tests scripts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:consumer": "node scripts/consumer.mjs",
+    "prepack": "npm run build",
+    "measure": "node --expose-gc scripts/measure.mjs"
+  },
+  "dependencies": {
+    "mailparser": "3.14.3",
+    "nodemailer": "10.5.0",
+    "sanitize-html": "2.18.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.11.1",
+    "@payloadcms/db-sqlite": "3.90.2",
+    "@payloadcms/next": "3.90.2",
+    "@payloadcms/translations": "3.90.2",
+    "@payloadcms/ui": "3.90.2",
+    "@playwright/test": "1.58.2",
+    "@tailwindcss/cli": "4.1.18",
+    "@types/mailparser": "3.4.6",
+    "@types/node": "22.19.9",
+    "@types/nodemailer": "7.0.11",
+    "@types/react": "19.2.14",
+    "@types/sanitize-html": "2.16.1",
+    "eslint": "9.39.1",
+    "next": "16.3.3",
+    "payload": "3.90.2",
+    "prettier": "3.6.2",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "tailwindcss": "4.1.18",
+    "tsx": "4.23.15",
+    "typescript": "5.7.2",
+    "typescript-eslint": "8.57.0",
+    "vitest": "4.0.18"
+  },
+  "packageManager": "pnpm@10.32.1"
+}

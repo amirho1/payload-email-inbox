@@ -1,0 +1,43 @@
+@layer payload-mail;
+@import 'tailwindcss/theme.css' layer(payload-mail) prefix(pm);
+@import 'tailwindcss/utilities.css' layer(payload-mail) prefix(pm) source(none);
+@source "./ui";
+
+@layer payload-mail {
+  .payload-mail {
+    color: var(--theme-text);
+    background: var(--theme-bg);
+    font-family: inherit;
+  }
+  .payload-mail :where(button, input, select, textarea) {
+    font-family: inherit;
+    color: inherit;
+    box-sizing: border-box;
+  }
+  .payload-mail :where(button, input, select, textarea):focus-visible {
+    outline: 2px solid var(--theme-elevation-800);
+    outline-offset: 3px;
+  }
+  .payload-mail :where(button) {
+    cursor: pointer;
+  }
+  .payload-mail :where(button):disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+  .payload-mail :where(pre) {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-family: inherit;
+  }
+  .payload-mail :where(iframe) {
+    border: 0;
+    width: 100%;
+    min-height: 16rem;
+  }
+  .payload-mail :where(input, select, textarea, button) {
+    background: var(--theme-elevation-50);
+    border: 1px solid var(--theme-elevation-300);
+    border-radius: 0.5rem;
+  }
+}

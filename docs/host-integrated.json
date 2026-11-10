@@ -1,0 +1,11 @@
+{
+  "baseCommit": "1bbc519753bd594960db5b6de75e37ddda198c2d",
+  "staticJsFiles": 173,
+  "staticJsBytes": 4810446,
+  "staticJsGzipBytes": 1519490,
+  "staticCssBytes": 810766,
+  "baselineStaticJsGzipBytes": 1513150,
+  "gzipDeltaBytes": 6340,
+  "productionBuildPassed": true,
+  "note": "Before upstream product-only change is rebased; same application base for this comparison."
+}

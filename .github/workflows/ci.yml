@@ -1,0 +1,23 @@
+name: Verify Payload Mail
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.4
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check && pnpm lint && pnpm typecheck && pnpm test
+      - run: pnpm test:consumer
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+      - run: pnpm --dir .private/consumer build
+        env:
+          MAIL_FIXTURE_DIR: ${{ github.workspace }}/.private/fixture
+          PAYLOAD_CONFIG_PATH: ${{ github.workspace }}/.private/consumer/payload.config.ts

@@ -1,0 +1,11 @@
+# Threading and delivery semantics
+
+Threading uses validated Message-ID, In-Reply-To and bounded References, scoped by mailbox. Headers alone never authorize a link. A candidate must contain the incoming visible sender and all external visible participants already established in the conversation; ambiguous multiple candidates create a new conversation. Unknown/malformed/missing references create a stable new thread. Subject-only merging is intentionally absent. Domains normalize; local-part case/dots/plus tags are preserved. Incoming SMTP From can still be spoofed: Postal forwarding authenticity does not authenticate the human sender.
+
+Recipients in Bcc stay private and are not added to visible participants/reply-all. Plain-text replies/forwards preserve Persian. Forward UI marks quoted content and includes only authorized source attachments. Reply source IDs are reauthorized and reply headers are generated server-side. Notes have empty recipients and cannot enter the outbox even if an endpoint is invoked manually. No incoming mail triggers an automatic reply. Auto-submitted/bounce flags prompt review.
+
+Draft → queued → submitting → provider-accepted → delivered-to-recipient-server/delayed/failed/bounced. A callback may arrive before acceptance persistence and stays queued for retry. Bounced and terminal failed states are not overwritten by older/delayed events. Bounces can supersede earlier delivery. Multi-recipient status is conservative: any failure/bounce is surfaced; all recipient IDs must report delivery before the aggregate is delivered.
+
+Definitely unaccepted retryable failures get bounded exponential backoff. Explicit failed retry resets active delivery attempt data. Network uncertainty and expired submission lease become ambiguous and are not automatically retried. Operators reconcile provider queue/message IDs before composing a new deliberate send. An expired receipt lease can be retried because receipt/message/attachment unique keys prevent duplicate normalized records. No exactly-once SMTP promise exists.
+
+Minimal history is bounded to 50 transitions and stores only status/time/redacted code. UI shows attempts. Successful SMTP recipient-server acceptance is separate from provider acceptance and from recipient-observed Inbox placement.

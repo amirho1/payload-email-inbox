@@ -1,0 +1,8 @@
+pnpm-lock.yaml
+dist
+node_modules
+graphify-out
+.next
+example/.next
+test-results
+playwright-report

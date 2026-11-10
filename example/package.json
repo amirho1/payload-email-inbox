@@ -1,0 +1,30 @@
+{
+  "name": "payload-mail-example",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.32.1",
+  "scripts": {
+    "dev": "next dev --webpack --port 4100",
+    "build": "next build --webpack",
+    "generate:importmap": "payload generate:importmap"
+  },
+  "dependencies": {
+    "payload-plugin-mail": "file:../payload-plugin-mail-0.1.0-alpha.1.tgz",
+    "payload": "3.90.2",
+    "@payloadcms/db-sqlite": "3.90.2",
+    "@payloadcms/next": "3.90.2",
+    "@payloadcms/ui": "3.90.2",
+    "@payloadcms/translations": "3.90.2",
+    "next": "16.3.3",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "graphql": "16.15.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.9",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "typescript": "5.7.2",
+    "tsx": "4.23.15"
+  }
+}

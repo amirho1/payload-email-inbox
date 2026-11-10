@@ -1,0 +1,65 @@
+# Payload Mail progress ledger
+
+## 2026-11-10 — discovery and implementation in progress
+
+- Package workspace: `/Users/amirho/Projects/payload-email-inbox`, empty origin `https://github.com/amirho1/payload-email-inbox.git`; branch `feat/payload-mail`.
+- Host: `amirho1/moftkhar`, isolated worktree `/Users/amirho/Projects/moftkhar-payload-mail`, branch `feat/payload-mail`, base `1bbc519753bd594960db5b6de75e37ddda198c2d`. Original workspaces have unrelated edits; do not reset them.
+- Infrastructure: `amirho1/moftkhar-mail`, Postal 3.3.7/MariaDB; preserve services and route. User's untracked prompt preserved.
+- Narrow initial target: Node 22.23.4, Payload/SQLite/UI 3.90.2, Next 16.3.3, React 19.2.6. No other adapter/version supported without tests.
+- Repository-local Payload skill discovered through Graphify under host `.agents/skills/payload`; reviewed plugin, endpoints, access docs. Graph is stale in parts: source and live state take precedence.
+- SSH Git read works. `gh` has no authenticated CLI session; HTTPS origin access works. No publication performed. npm registry returned E404 for provisional name; this does not reserve it.
+- Dokploy connector disappeared during discovery; existing reviewed `ops/dokployMcp.py` can read configured MCP directly. Response envelope is `{success,message,data}`. Do not print env/config/secrets.
+- Official Postal documentation disagrees with pinned source on retries. 3.3.7 HTTPSender: 2xx accepted; 5xx/network retries; 429 terminal without bounce; other 4xx terminal. Webhook events: initial + five bounded retries. Both use Postal::HTTP signing exact body using RSA-SHA256 and X-Postal-Signature-256, with trusted pinned keys. No callback-selected key retrieval.
+
+## Plan
+
+1. Build strict package, collection boundaries, validation, pinned-key Postal adapter, durable receipts and SQLite atomic claims.
+2. Implement inbox/composer/thread/attachment workflows, English/Persian admin view, scoped compiled Tailwind.
+3. Prove with real Payload SQLite integration and browser journeys against packed artifact; fix failure modes.
+4. Document/review package, dependency licenses, graph, measured resource budgets, and restore rehearsal.
+5. Integrate packed artifact into isolated real host, generate additive migrations, run host checks, push reviewed changes.
+6. Verify deployment checkpoint, deploy through established pipeline, then configure support route only after ready ingress. Complete controlled round trip; recipient observation is required.
+
+## Decisions
+
+- Reuse Payload auth, adapter, database and admin; no new runtime process or Redis requirement. Host invokes bounded worker tick from existing scheduler/Payload job.
+- Three core collections plus a private attachment-bytes collection and durable ingress/event work collection. Messages themselves hold the durable outbox. Notes cannot enter submission states.
+- Only SQLite supported initially. Payload bulk update reads then updates by ID, so it is NOT a compare-and-swap. Atomic scalar/JSON updates and leases require one parameterized SQLite UPDATE ... WHERE ... RETURNING via an isolated storage interface.
+- Default-deny collections; permission-filtered reads, endpoint-only validated writes. Privileged worker writes are separate from caller authorization. Explicit origin check for staff mutation APIs; provider signature auth separate.
+- No automatic replies. Timeout/crash after submission becomes ambiguous; no automatic resend.
+
+## Budgets (before implementation; actual measurements pending)
+
+- Packed tarball <150 KiB; compiled route client entry <35 KiB gzip (excluding host React/Payload UI); compiled CSS <20 KiB.
+- Added production direct dependencies <=4; no browser mail parser/provider/sanitizer dependency.
+- Inbox 25 rows, <=3 database list queries and p95 <250 ms locally at 1,000 conversations, concurrency 5.
+- Idle RSS delta <50 MiB relative to same minimal host; 100 synthetic receipts acknowledged durably within Postal 5 second deadline each, concurrency 5. These are targets, not achieved claims.
+
+## Required evidence still pending
+
+All implementation, tests, measurements, host integration, push, deployment and recipient round trip remain unproven at this initial checkpoint. No production changes or test mail sent.
+
+## Verified incremental results
+
+- 30 unit/real Payload SQLite integration tests passed after adding delivery replay/precedence, definite retry bounds and receipt-lease recovery.
+- Packed consumer installs and initializes without source aliases. Latest successful consumer run used compiled scoped CSS and split navigation entry.
+- Three browser checks passed (36.3 seconds): en/fa complete persistence journey, RTL/mobile/a11y/XSS, and anonymous/nonstaff/cross-mailbox REST denial. More UI-state coverage being added.
+- Running Postal container source was read through authorized SSH run-command: `/opt/postal/app/app/senders/http_sender.rb` and `/opt/postal/app/lib/postal/http.rb`. Confirms SHA256 signature and 5xx soft retry / 429 hard-no-bounce mapping. No production mutations performed.
+- Host frozen install must use `pnpm install` without `--ignore-workspace`, because its workspace contains reviewed Payload patches. Install succeeded using existing lockfile; ignoring workspace causes patchedDependencies mismatch.
+- Live host is receiving other releases while work proceeds; revalidate current remote/image immediately before integration merge/deploy. Never deploy the older base by overwriting newer commits.
+
+## Release checkpoint — independent work completed, production gate pending
+
+- 36 library tests and four packed-consumer browser journeys pass. Latest consumer production build passes.
+- Full host suite: 731/731 tests, 96 files, 98.04 seconds; no skipped tests or unhandled errors in final run. Host lint has 0 errors/82 existing warnings; types/build pass.
+- Root dependency audit is clean; fixed earlier vulnerable parser/sanitizer/Nodemailer pins. Permissive dependency/license inventory recorded.
+- Fixed startup coupling by moving mailbox metadata synchronization to explicit post-migration worker ticks. Host onInit is preserved unchanged. Pricing partial-migration replay now passes.
+- Host fresh test DB requires the already-documented nullable-email schema setup. Applied existing authEmailMigration schema mode with its own verified backup ONLY to /tmp test DB. No production auth changes. Fixed one stale checkout unit-test mock at its real payment API boundary; production checkout behavior unchanged.
+- Mail migration is additive/idempotent; rollback preserves mail tables and reapply works. Unrelated historical schema drift was removed from generated UP/DOWN. Host restore rehearsal verifies actual schema and synthetic private bytes/unknown states.
+- Remote main advanced from 1bbc519 to 5b217c1 (product overflow fix). Preserve it by rebasing integration branch before release; never overwrite it.
+- Trusted signer SPKI SHA256: f244ded19d7c855333cdcab32e94e7beed4420c142f99070fd65594f1b20d482. PEM fetched only from configured HTTPS Postal JWKS after matching independently authenticated SSH fingerprint. Local PEM stays in ignored .private.
+- Production support route checkpoint: Postal server 1, route 1, domain 4, support@moftkhar.ir, mode Accept, endpoint null, spam Mark. Current inspected app image ID sha256:4c3862d09c0d9750876fb16a284a623108482fd58bd1da4748ab5e51e58f989c; revalidate before any rollout.
+- **Production blocker:** SSH automatic approval rejected creating /app/data/payload-mail-checkpoints/before-20261110-payload-mail.sqlite with APPROVAL_DENIED: User did not approve this command. No backup was created by that command. Do not retry it through alternate execution wrappers. No app deploy, route mutation or live test mail has occurred.
+- Browser provider is unavailable; native Brave selection also failed. CUA task closed with browser blocker. Owner was asked asynchronously to confirm Gmail receipt/reply when a live test can be sent. Production recipient verification remains required.
+
+- Final full-host rerun: 731 tests across 96 files passed with no skipped tests or unhandled errors. Fresh test DB was aligned using the existing nullable-email schema tool; no production auth changes.
