@@ -1,0 +1,30 @@
+{
+  "baselineBaseCommit": "7c56ea2f2298b72f662ed7b7584918c8d094d47c",
+  "baselineUpstreamOverlayCommit": "52f7809",
+  "baselineOverlayFiles": [
+    "src/components/Footer/footerContact.tsx",
+    "src/components/Footer/footerContactLinks.ts",
+    "src/components/contactList.tsx"
+  ],
+  "integratedCommit": "686d55c7ea0b029e09688f5858d741a23206bad4",
+  "pluginVersion": "0.1.0-alpha.4",
+  "baseline": {
+    "staticJsFiles": 173,
+    "staticJsBytes": 4791689,
+    "staticJsGzipBytes": 1513256,
+    "staticCssBytes": 806670
+  },
+  "integrated": {
+    "staticJsFiles": 173,
+    "staticJsBytes": 4811333,
+    "staticJsGzipBytes": 1520022,
+    "staticCssBytes": 810714
+  },
+  "clientJsGzipDeltaBytes": 6766,
+  "cssDeltaBytes": 4044,
+  "bothProductionBuildsPassed": true,
+  "node": "22.23.4",
+  "hardware": "Apple M2 Pro / 10 cores / 16 GiB",
+  "note": "Independent frozen-lockfile baseline consumer: same non-mail runtime including upstream footer refactor. All correspondence, fixtures and build databases synthetic.",
+  "compression": "Python gzip.compress default level 9, each static JS file independently; same compressor used for both builds"
+}
