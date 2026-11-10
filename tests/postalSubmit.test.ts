@@ -102,6 +102,7 @@ it('round-trips incoming raw Unicode/multipart/MIME attachment and validated rep
 })
 it('treats errors from the unchanged host email adapter as ambiguous', async () => {
   const fake = {
+    config: { email: () => undefined },
     sendEmail: async () => {
       throw new Error('synthetic private provider error')
     },
@@ -110,4 +111,14 @@ it('treats errors from the unchanged host email adapter as ambiguous', async () 
     state: 'ambiguous',
     code: 'adapter-error',
   })
+})
+
+it('does not mistake Payload console-only mail for provider acceptance', async () => {
+  const sendEmail = vi.fn()
+  const fake = { config: {}, sendEmail } as unknown as Payload
+  expect(await submitWithPayload(data, box, fake)).toEqual({
+    state: 'failed',
+    code: 'adapter-not-configured',
+  })
+  expect(sendEmail).not.toHaveBeenCalled()
 })

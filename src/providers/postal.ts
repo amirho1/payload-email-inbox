@@ -1,5 +1,12 @@
 import { createHash, createPublicKey, verify } from 'node:crypto'
-import type { MailProvider, MailData, Limits, NormalizedIncoming, DeliveryEvent } from '../types.js'
+import type {
+  MailProvider,
+  MailData,
+  Limits,
+  NormalizedIncoming,
+  DeliveryEvent,
+  SubmitResult,
+} from '../types.js'
 import { MailError } from '../server/errors.js'
 import { address, addresses, attachment, messageId, references } from '../server/validation.js'
 
@@ -266,8 +273,10 @@ export async function submitWithPayload(
   message: MailData,
   box: { replyTo?: string; name?: string },
   payload: Parameters<NonNullable<MailProvider['submit']>>[2],
-) {
+): Promise<SubmitResult> {
   const { mailOptions } = await import('../server/mime.js')
+  // Payload's unconfigured default logs mail without submitting it. Never label that acceptance.
+  if (!payload.config?.email) return { state: 'failed' as const, code: 'adapter-not-configured' }
   try {
     await payload.sendEmail(await mailOptions(message, payload, box))
     return { state: 'provider-accepted' as const, ids: [] }
