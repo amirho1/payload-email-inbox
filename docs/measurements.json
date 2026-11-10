@@ -8,25 +8,25 @@
   },
   "baseline": {
     "mode": "baseline",
-    "idleRssBytes": 188645376,
+    "idleRssBytes": 177733632,
     "node": "v22.23.4"
   },
   "enabled": {
     "mode": "enabled",
-    "idleRssBytes": 189825024,
+    "idleRssBytes": 182370304,
     "node": "v22.23.4",
     "datasetConversations": 1000,
     "concurrency": 5,
     "inboxSamples": 50,
-    "inboxP95ms": 24.50108399999999,
+    "inboxP95ms": 13.533416999999872,
     "sqlStatementsPerInbox": 2,
     "burstReceipts": 100,
-    "burstMaxAckMs": 19.332582999999886,
-    "burstProcessingMs": 249.55541599999992,
+    "burstMaxAckMs": 10.402957999999899,
+    "burstProcessingMs": 351.09679099999994,
     "normalizedMessages": 100
   },
-  "idleRssDeltaBytes": 1179648,
-  "compiledClientGzipBytes": 7948,
+  "idleRssDeltaBytes": 4636672,
+  "compiledClientGzipBytes": 8064,
   "compiledCssBytes": 4191,
   "directRuntimeDependencies": ["mailparser", "nodemailer", "sanitize-html", "zod"],
   "limits": {

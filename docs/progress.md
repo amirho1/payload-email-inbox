@@ -1,5 +1,14 @@
 # Payload Mail progress ledger
 
+## Current checkpoint — alpha.3 validation and cutover pending
+
+- Deployed image is healthy and its OCI revision is a7ecf24c9f3fb6d7e51ca6fcc875c19dedb253a1 (alpha.2), image ID sha256:66c9b080e6cf259a5dce5d1c8152cb952c7c0b62826542c68a463358d31870d3. This is deployment proof, not final workflow/recipient proof.
+- Alpha.3 fixes a real early-Compose settings race and restores host navigation by forwarding initPageResult.permissions/locale to Payload DefaultTemplate. Configuration transport failures show a recoverable alert; Refresh retries the real API, and stale configuration responses cannot replace newer state.
+- Local alpha.3: 39 unit/integration tests, five packed-consumer browser journeys (49.5 seconds), clean installation, consumer production build, format/lint/types and measured budgets pass. Real host build/types/lint pass; final host release checks are continuing.
+- Remote CI now uses Ubuntu 24.04 and pinned Node 24 actions. Chromium installation passes. Previous remote run exposed the Compose race (3 browser journeys passed, one timed out); alpha.3 adds deterministic delayed-settings and recovery regressions and must pass remotely before cutover.
+- Owner sent controlled "Test subject" from Gmail to support. Postal screenshot confirms receipt and Accept-only processing with no endpoint. It is retained in Postal; do not claim it is in Payload yet. Redeliver only that controlled test after authenticated ingress is ready. Support route and event callbacks remain unchanged.
+- Production backup and signer provisioning are verified (details below). Native Brave admin session is available again. Signed readiness/replay and transactional support-only Postal cutover/rollback operator are prepared in a disabled Dokploy task KQpXncItbD2hT3I7DCIZk. Only its read-only plan has run; no fixture was posted, route changed or test mail sent by this agent.
+
 ## 2026-11-10 — discovery and implementation in progress
 
 - Package workspace: `/Users/amirho/Projects/payload-email-inbox`, empty origin `https://github.com/amirho1/payload-email-inbox.git`; branch `feat/payload-mail`.
