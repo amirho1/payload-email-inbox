@@ -1,0 +1,35 @@
+{
+  "baseline": {
+    "staticJsFiles": 173,
+    "staticJsBytes": 4796141,
+    "staticJsGzipBytes": 1517174,
+    "staticCssBytes": 809310
+  },
+  "integrated": {
+    "staticJsFiles": 176,
+    "staticJsBytes": 5057563,
+    "staticJsGzipBytes": 1596971,
+    "staticCssBytes": 832074
+  },
+  "baselineBaseCommit": "fcec2db0e32fce5e15942aa019592989de5c8182",
+  "pluginVersion": "0.1.0-alpha.5",
+  "baselineMode": "Same updated host runtime and security patches; mail disabled, mail CSS omitted, import map regenerated",
+  "baselineOverlayFiles": [
+    "package.json",
+    "pnpm-lock.yaml",
+    "pnpm-workspace.yaml",
+    "patches/@payloadcms__plugin-mcp@3.90.2.patch",
+    "src/lib/auth/createSmtpAdapter.ts",
+    "src/app/(payload)/layout.tsx",
+    "src/app/(payload)/admin/importMap.js"
+  ],
+  "clientJsGzipDeltaBytes": 79797,
+  "cssDeltaBytes": 22764,
+  "bothProductionBuildsPassed": true,
+  "compression": "Python gzip.compress level9 per static JS file, same compressor and settings both builds",
+  "node": "22.23.4",
+  "next": "16.4.1",
+  "hardware": "Apple M2 Pro / 10 cores / 16 GiB",
+  "note": "Synthetic build databases only; no production correspondence or credentials.",
+  "integratedCommit": "9834c242158f722a6a7cf206b6a2622538c7ad4d"
+}

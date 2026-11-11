@@ -6,5 +6,6 @@
   "unpackedBytes": 295406,
   "files": 114,
   "sha256": "0f2ea26130adb9574c214d172165d3de1c77d712f0f8603ba63e25a6874b238f",
-  "cleanConsumerPassed": true
+  "cleanConsumerPassed": true,
+  "implementationCommit": "ea7478a206f4c8d8e36246b0dc509fb58a298ad5"
 }
