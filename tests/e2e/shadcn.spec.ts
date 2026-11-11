@@ -38,6 +38,9 @@ for (const language of ['en', 'fa'] as const) {
       (
         await page.request.post('/api/mail/postal/emulator/incoming', {
           data: body,
+          // Exact signed receipt IDs are durable and idempotent. Retry connection resets only;
+          // Playwright still fails on every non-200 response and after two network retries.
+          maxRetries: 2,
           headers: {
             'content-type': 'application/json',
             'x-postal-signature-256': sign('sha256', Buffer.from(body), key).toString('base64'),

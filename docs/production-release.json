@@ -1,0 +1,46 @@
+{
+  "observedAtUtc": "2026-11-11T07:00:56.590875+00:00",
+  "hostRepository": "amirho1/moftkhar",
+  "hostCommit": "669035640f053ec462468dc24d80b742ef28df78",
+  "package": "payload-plugin-mail@0.1.0-alpha.5",
+  "deploymentId": "_icAL1lYB3A8KS_enoWnt",
+  "deploymentStatus": "done",
+  "imageId": "sha256:b390d713e45a9d67af6b0694ddce3e68933cc5feb947671a0be432ed0dbc9075",
+  "ociRevision": "669035640f053ec462468dc24d80b742ef28df78",
+  "containerHealth": "healthy",
+  "restartCount": 0,
+  "migrations": "Done",
+  "next": "16.4.1",
+  "existingWorkersRestarted": true,
+  "inboxUrl": "https://moftkhar.ir/admin/mail",
+  "anonymousProbes": {
+    "inbox": 403,
+    "privateAttachment": 403,
+    "unsignedIncoming": 401,
+    "unsignedEvent": 401,
+    "allNoStore": true
+  },
+  "controlledHistoricalDeliveryReplay": {
+    "providerId": 5,
+    "uuid": "b87aeb23-018c-4edb-9674-acd3ae662116",
+    "httpCodes": [200, 200],
+    "smtpResubmitted": false,
+    "workerCompletionVerified": false
+  },
+  "controlledNotification": {
+    "providerId": 7,
+    "submittedOnce": true,
+    "providerStatus": "Sent",
+    "tls": true,
+    "queued": false,
+    "gmailInboxObserved": false
+  },
+  "remainingVerification": [
+    "Signed-in deployed English/Persian RTL UI, private attachment/provider inspection and preserved thread",
+    "Delivery-event worker completion and duplicate absence",
+    "Gmail Inbox observation of notification7"
+  ],
+  "previousHealthyImageId": "sha256:d0c6896a734bb18d10a3f2d307557479197b076ba345ebf57a8c79177796b698",
+  "previousOciRevision": "9353fa2bb542e343cbce5b1f9a0686f890e0fc49",
+  "productionCorrespondenceDeleted": false
+}
