@@ -19,7 +19,7 @@ This section supersedes historical checkpoints below. Full production completion
 - Local preview restarted with updated dependencies; pnpm dev session59421, orchestrator27907, log /tmp/payload-mail-live-dev.log, loopback4101, preserved synthetic dev-data. Login agent@example.com / Synthetic-password-123! (public fixture credentials). Temporary verification Redis stopped; unrelated services untouched.
 - New-image public HTTPS checks pass: inbox/private attachment403, unsigned incoming/event401, all no-store; healthy/no restarts, worker logs show no errors. One point-in-time observation: app149.7MiB, bot291.4MiB, cart247.3MiB; not a production resource guarantee.
 - Fresh docs-head CI42975401447 passed, sibling42975401473 failed one Persian fixture POST with ECONNRESET (seven tests passed). Added only two bounded connection-reset retries for the exact idempotent signed fixture; non200 responses/assertions still fail. Fresh entire local browser run eight passed/58.7sec; format/lint/types pass.
-- Remaining: deployed en/fa/RTL/attachments/access/provider UI, event worker completion/no duplicates and Gmail Inbox observation of notification7. Final remote CI for the test-only repair must be observed. Do not call the complete objective finished while these remain unverified.
+- Remaining: deployed en/fa/RTL/attachments/access/provider UI, event worker completion/no duplicates and Gmail Inbox observation of notification7. Remote CI42976460773 and42976460292 both passed completely at test-source commit de661bfa13a0d6b34295080ba6e1888ca7d6358b, including all browser journeys, clean consumer production build and measured budgets. Do not call the complete objective finished while these remain unverified.
 
 ## Current status audit — 2026-11-10
 
