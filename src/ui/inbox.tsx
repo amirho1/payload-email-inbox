@@ -1,44 +1,51 @@
 'use client'
-import { Button } from './button.js'
-import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { useTranslation } from '@payloadcms/ui'
-import type { Language, Mailbox, MailID, MailRecord } from '../types.js'
-import { en, fa } from './translations.js'
-import { mailRequest } from './api.js'
-import { Composer, button, type ComposeSeed } from './composer.js'
+import React, { useEffect, useState } from 'react'
+import {
+  Archive,
+  ArchiveRestore,
+  ArrowLeft,
+  ArrowRight,
+  Mail,
+  Menu,
+  MessageSquarePlus,
+  RefreshCw,
+  Reply,
+  ReplyAll,
+  Forward,
+  MailOpen,
+} from 'lucide-react'
+import type { Language, MailRecord } from '../types.js'
+import { useMail, type Conversation } from './use-mail.js'
+import { MailSurface } from './surface.js'
+import { MailNavigation } from './navigation.js'
+import { MailList } from './message-list.js'
+import { MailSettings } from './settings.js'
+import { Composer } from './composer.js'
 import { Message } from './message.js'
+import { IconButton } from './controls.js'
+import { Button } from './components/button.js'
+import { Separator } from './components/separator.js'
+import { ScrollArea } from './components/scroll-area.js'
+import { TooltipProvider } from './components/tooltip.js'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from './components/dialog.js'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from './components/sheet.js'
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from './components/resizable.js'
+import { cn } from './utils.js'
 
-type Conversation = {
-  id: MailID
-  mailbox: string
-  subject: string
-  sender: string
-  unread: boolean
-  status: 'open' | 'closed'
-  participants: string[]
-}
-type Page<T> = {
-  docs: T[]
-  page: number
-  hasNextPage: boolean
-  hasPrevPage: boolean
-  totalDocs: number
-}
-type Detail = {
-  conversation: Conversation
-  messages: Page<MailRecord>
-  attachments: { id: MailID; filename: string }[]
-}
-type Settings = {
-  mailboxes: Mailbox[]
-  limits: { pollingMs: number }
-  language: Language
-  timeZone: string
-  calendar: string
-  numberingSystem: string
-}
-
-/** A route-local inbox using Payload's language/session and bounded, hidden-tab-aware polling. */
+/** Three real mail panes on desktop, one active pane and a navigation sheet on phones. */
 export function MailInbox({
   apiPath,
   initialLanguage,
@@ -46,435 +53,354 @@ export function MailInbox({
   apiPath: string
   initialLanguage?: Language
 }) {
-  const { i18n, switchLanguage } = useTranslation()
-  const hostLanguage: Language = i18n.language === 'fa' ? 'fa' : 'en'
-  const [language, setLanguage] = useState<Language>(initialLanguage ?? hostLanguage)
-  const lastHostLanguage = useRef(hostLanguage)
+  const s = useMail({ apiPath, initialLanguage })
+  const { t } = s
+  const [container, setContainer] = useState<HTMLElement | null>(null)
+  const [desktop, setDesktop] = useState(false)
+  const [navigationOpen, setNavigationOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   useEffect(() => {
-    if (lastHostLanguage.current !== hostLanguage) {
-      lastHostLanguage.current = hostLanguage
-      setLanguage(hostLanguage)
-    }
-  }, [hostLanguage])
-  const t = language === 'fa' ? fa : en
-  const [settings, setSettings] = useState<Settings>()
-  const [settingsError, setSettingsError] = useState('')
-  const settingsRequest = useRef(0)
-  const [inbox, setInbox] = useState<Page<Conversation>>()
-  const [detail, setDetail] = useState<Detail>()
-  const [seed, setSeed] = useState<ComposeSeed>()
-  const [query, setQuery] = useState({
-    search: '',
-    mailbox: '',
-    status: '',
-    unread: false,
-    page: 1,
-  })
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const heading = useRef<HTMLHeadingElement>(null)
-  const fail = useCallback(
-    (e: unknown) => setError(t[(e as Error).message as keyof typeof t] ?? t.error),
-    [t],
-  )
-  const load = useCallback(async () => {
-    setError('')
-    setLoading(true)
-    try {
-      const p = new URLSearchParams({
-        ...query,
-        unread: String(query.unread),
-        page: String(query.page),
-      })
-      setInbox(await mailRequest<Page<Conversation>>(`${apiPath}/inbox?${p}`))
-    } catch (e) {
-      fail(e)
-    } finally {
-      setLoading(false)
-    }
-  }, [apiPath, query, fail])
-  const loadSettings = useCallback(async () => {
-    const request = ++settingsRequest.current
-    setSettingsError('')
-    try {
-      const next = await mailRequest<Settings>(`${apiPath}/config`)
-      if (request !== settingsRequest.current) return
-      setSettings(next)
-      setSettingsError('')
-    } catch (e) {
-      if (request === settingsRequest.current)
-        setSettingsError(t[(e as Error).message as keyof typeof t] ?? t.error)
-    }
-  }, [apiPath, t])
-  useEffect(() => {
-    void loadSettings()
-  }, [loadSettings])
-  useEffect(() => {
-    const timer = setTimeout(() => void load(), 250)
-    return () => clearTimeout(timer)
-  }, [load])
-  useEffect(() => {
-    let stopped = false
-    let timer: ReturnType<typeof setTimeout>
-    const poll = async () => {
-      if (!document.hidden && !stopped) {
-        await load()
-        if (detail)
-          try {
-            setDetail(
-              await mailRequest<Detail>(
-                `${apiPath}/conversation/${detail.conversation.id}?page=${detail.messages.page}`,
-              ),
-            )
-          } catch (e) {
-            fail(e)
-          }
-      }
-      if (!stopped) timer = setTimeout(() => void poll(), settings?.limits.pollingMs ?? 30000)
-    }
-    timer = setTimeout(() => void poll(), settings?.limits.pollingMs ?? 30000)
-    return () => {
-      stopped = true
-      clearTimeout(timer)
-    }
-  }, [
-    load,
-    apiPath,
-    detail?.conversation.id,
-    detail?.messages.page,
-    settings?.limits.pollingMs,
-    fail,
-  ])
-
-  const open = async (id: MailID, page = 1) => {
-    try {
-      const d = await mailRequest<Detail>(`${apiPath}/conversation/${id}?page=${page}`)
-      await mailRequest(`${apiPath}/conversation/${id}`, { unread: false })
-      setDetail(d)
-      setSeed(undefined)
-      await load()
-      heading.current?.focus()
-    } catch (e) {
-      fail(e)
-    }
-  }
-  const refresh = async () => {
-    if (!settings) await loadSettings()
-    await load()
-    if (detail)
-      setDetail(
-        await mailRequest<Detail>(
-          `${apiPath}/conversation/${detail.conversation.id}?page=${detail.messages.page}`,
-        ),
+    const media = window.matchMedia('(min-width: 1024px)')
+    const change = () => setDesktop(media.matches)
+    change()
+    media.addEventListener('change', change)
+    return () => media.removeEventListener('change', change)
+  }, [])
+  const select = async (row: Conversation) => {
+    setSettingsOpen(false)
+    s.setSelectedItem(String(row.id))
+    const detail = await s.open(row.conversationId || row.id)
+    if (detail && s.query.folder === 'drafts' && row.state === 'draft') {
+      const draft = detail.messages.docs.find(
+        (message) => String(message.id) === String(row.messageId),
       )
-  }
-  const newDraft = () => {
-    const box = settings?.mailboxes[0]
-    if (!box) return
-    setSeed({
-      mailbox: box.key,
-      kind: 'outgoing',
-      action: 'compose',
-      from: box.address,
-      to: [],
-      cc: [],
-      bcc: [],
-      subject: '',
-      text: '',
-      attachments: [],
-    })
-  }
-  const act = (action: 'reply' | 'replyAll' | 'forward' | 'compose', m: MailRecord) => {
-    const box = settings!.mailboxes.find((b) => b.key === m.mailbox)!
-    if (action === 'compose') {
-      setSeed({
-        ...m.data,
-        mailbox: m.mailbox,
-        conversation: m.conversation,
-        kind: m.kind === 'note' ? 'note' : 'outgoing',
-        action: 'compose',
-        id: m.id,
-      })
-      return
-    }
-    const own = [box.address, ...(box.allowedFrom ?? [])]
-    const targets = own.includes(m.data.from) ? m.data.to : [m.data.replyTo || m.data.from]
-    setSeed({
-      mailbox: box.key,
-      conversation: m.conversation,
-      kind: 'outgoing',
-      action,
-      replyToMessage: m.id,
-      from: box.address,
-      to: action === 'forward' ? [] : targets.filter((a) => !own.includes(a)),
-      cc:
-        action === 'replyAll'
-          ? [...new Set([...m.data.to, ...m.data.cc])].filter(
-              (a) => !own.includes(a) && !targets.includes(a),
-            )
-          : [],
-      bcc: [],
-      subject: `${action === 'forward' ? 'Fwd:' : 'Re:'} ${m.data.subject}`,
-      text:
-        action === 'forward'
-          ? `---------- ${t.forwarded} ----------\n${m.data.from}\n${m.data.subject}\n\n${m.data.text}`
-          : '',
-      attachments: action === 'forward' ? m.data.attachments : [],
-    })
-  }
-  const changeConversation = async (patch: object) => {
-    if (!detail) return
-    try {
-      await mailRequest(`${apiPath}/conversation/${detail.conversation.id}`, patch)
-      await refresh()
-    } catch (e) {
-      fail(e)
+      if (draft) s.act('compose', draft)
     }
   }
-  const retry = async (id: MailID) => {
-    try {
-      await mailRequest(`${apiPath}/send/${id}`, {})
-      await refresh()
-    } catch (e) {
-      fail(e)
-    }
-  }
-  const date = (value: string) =>
-    new Intl.DateTimeFormat(language, {
-      timeZone: settings?.timeZone ?? 'UTC',
-      calendar: settings?.calendar ?? 'gregory',
-      numberingSystem: settings?.numberingSystem ?? 'latn',
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    }).format(new Date(value))
-  return (
-    <main
-      className="payload-mail pm:mx-auto pm:grid pm:w-full pm:max-w-6xl pm:gap-5 pm:p-3 pm:sm:p-6"
-      dir={language === 'fa' ? 'rtl' : 'ltr'}
-      lang={language}
-    >
-      <header className="pm:flex pm:flex-wrap pm:items-center pm:justify-between pm:gap-3">
-        <h1 ref={heading} tabIndex={-1} className="pm:m-0 pm:text-3xl">
-          {t.title}
-        </h1>
-        <label>
-          {t.language}
-          <select
-            className={button}
-            value={language}
-            onChange={(e) => {
-              setLanguage(e.target.value as Language)
-              void switchLanguage?.(e.target.value as Language)
-            }}
-          >
-            <option value="en">English</option>
-            <option value="fa">فارسی</option>
-          </select>
-        </label>
-        <Button className={button} onClick={newDraft} disabled={!settings?.mailboxes.length}>
-          {t.compose}
-        </Button>
-      </header>
-      {error && <p role="alert">{error}</p>}
-      {settingsError && <p role="alert">{settingsError}</p>}
-      <div role="status" aria-live="polite">
-        {loading || (!settings && !settingsError) ? t.loading : ''}
-      </div>
-      {!detail && (
-        <>
-          <form
-            className="pm:grid pm:gap-3 pm:sm:grid-cols-2"
-            onSubmit={(e) => {
-              e.preventDefault()
-              void refresh()
-            }}
-          >
-            <label>
-              {t.search}
-              <input
-                className="pm:min-h-11 pm:w-full pm:px-3 pm:text-base"
-                value={query.search}
-                onChange={(e) => setQuery({ ...query, search: e.target.value, page: 1 })}
-              />
-            </label>
-            <label>
-              {t.all}
-              <select
-                className="pm:min-h-11 pm:w-full pm:px-3 pm:text-base"
-                value={query.mailbox}
-                onChange={(e) => setQuery({ ...query, mailbox: e.target.value, page: 1 })}
-              >
-                <option value="">{t.all}</option>
-                {settings?.mailboxes.map((b) => (
-                  <option key={b.key} value={b.key}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              {t.status}
-              <select
-                className={button}
-                value={query.status}
-                onChange={(e) => setQuery({ ...query, status: e.target.value, page: 1 })}
-              >
-                <option value="">{t.all}</option>
-                <option value="open">{t.open}</option>
-                <option value="closed">{t.closed}</option>
-              </select>
-            </label>
-            <label className="pm:flex pm:min-h-11 pm:items-center pm:gap-2">
-              <input
-                type="checkbox"
-                checked={query.unread}
-                onChange={(e) => setQuery({ ...query, unread: e.target.checked, page: 1 })}
-              />
-              {t.unread}
-            </label>
-            <Button className={button} type="submit">
-              {t.refresh}
-            </Button>
-          </form>
-          <section aria-label={t.inbox} className="pm:grid pm:gap-3">
-            {inbox?.docs.length === 0 && <p>{t.empty}</p>}
-            {inbox?.docs.map((c) => (
-              <Button
-                key={c.id}
-                className={`${button} pm:grid pm:w-full pm:gap-2 pm:p-4 pm:text-start`}
-                disabled={!settings}
-                onClick={() => void open(c.id)}
-              >
-                <strong dir="auto">{c.subject || t.noSubject}</strong>
-                <bdi dir="ltr" className="pm:break-all">
-                  {c.sender}
-                </bdi>
-                <span>
-                  {c.unread ? t.unread : t.read} · {t[c.status]}
-                </span>
-              </Button>
-            ))}
-          </section>
-          <nav aria-label={t.page} className="pm:flex pm:gap-3">
-            <Button
-              className={button}
-              disabled={!inbox?.hasPrevPage}
-              onClick={() => setQuery({ ...query, page: query.page - 1 })}
-            >
-              {t.previous}
-            </Button>
-            <span>
-              {t.page} {inbox?.page ?? 1}
-            </span>
-            <Button
-              className={button}
-              disabled={!inbox?.hasNextPage}
-              onClick={() => setQuery({ ...query, page: query.page + 1 })}
-            >
-              {t.next}
-            </Button>
-          </nav>
-        </>
-      )}
-      {detail && (
-        <>
-          <div className="pm:flex pm:flex-wrap pm:gap-2">
-            <Button
-              className={button}
-              onClick={() => {
-                setDetail(undefined)
-                setSeed(undefined)
-              }}
-            >
-              {t.back}
-            </Button>
-            <Button
-              className={button}
-              onClick={() =>
-                void changeConversation({
-                  status: detail.conversation.status === 'open' ? 'closed' : 'open',
-                })
-              }
-            >
-              {detail.conversation.status === 'open' ? t.close : t.reopen}
-            </Button>
-            <Button className={button} onClick={() => void changeConversation({ unread: true })}>
-              {t.markUnread}
-            </Button>
-            <Button
-              className={button}
-              onClick={() => {
-                const box = settings!.mailboxes.find((b) => b.key === detail.conversation.mailbox)!
-                setSeed({
-                  mailbox: box.key,
-                  conversation: detail.conversation.id,
-                  kind: 'note',
-                  action: 'compose',
-                  from: box.address,
-                  to: [],
-                  cc: [],
-                  bcc: [],
-                  subject: detail.conversation.subject,
-                  text: '',
-                  attachments: [],
-                })
-              }}
-            >
-              {t.addNote}
-            </Button>
-          </div>
-          <h2 dir="auto" className="pm:m-0 pm:break-words pm:text-2xl">
-            {detail.conversation.subject}
-          </h2>
-          <p>
-            {t.participants}:{' '}
-            <bdi dir="ltr" className="pm:break-all">
-              {detail.conversation.participants.join(', ')}
-            </bdi>
-          </p>
-          {detail.messages.docs.map((m) => (
-            <Message
-              key={m.id}
-              message={m}
-              files={detail.attachments.filter((a) =>
-                m.data.attachments.map(String).includes(String(a.id)),
-              )}
-              apiPath={apiPath}
-              language={language}
-              formatDate={date}
-              act={act}
-              retry={retry}
+  const latest = s.detail?.messages.docs
+    .filter((message) => message.kind !== 'note' && message.state !== 'draft')
+    .at(-1)
+  const inline = !!s.seed && !!s.detail && ['reply', 'replyAll'].includes(s.seed.action)
+  const title =
+    s.seed?.kind === 'note'
+      ? t.note
+      : s.seed?.action === 'reply'
+        ? t.reply
+        : s.seed?.action === 'replyAll'
+          ? t.replyAll
+          : s.seed?.action === 'forward'
+            ? t.forward
+            : t.compose
+  const providerInspection = !!s.settings?.providers?.find(
+    (provider) =>
+      provider.key ===
+      s.settings?.mailboxes.find((box) => box.key === s.detail?.conversation.mailbox)?.provider,
+  )?.inspect
+  const composer = s.seed && s.settings && (
+    <Composer
+      key={`${s.seed.id ?? 'new'}:${s.seed.action}:${s.seed.replyToMessage ?? ''}:${s.seed.kind}`}
+      seed={s.seed}
+      boxes={s.settings.mailboxes}
+      apiPath={apiPath}
+      language={s.language}
+      limits={s.settings.limits}
+      existingAttachments={s.detail?.attachments}
+      compact={inline}
+      onDone={s.refresh}
+      onCancel={() => s.setSeed(undefined)}
+    />
+  )
+  const messageAction = (
+    action: 'reply' | 'replyAll' | 'forward' | 'compose',
+    message: MailRecord,
+  ) => s.act(action, message)
+  const detail = (
+    <section aria-label={t.details} className="pm:flex pm:h-full pm:min-w-0 pm:flex-col">
+      <header className="pm:flex pm:min-h-14 pm:shrink-0 pm:flex-wrap pm:items-center pm:justify-between pm:gap-1 pm:border-b pm:px-3 pm:py-1">
+        <div className="pm:flex pm:items-center pm:gap-1">
+          {!desktop && (
+            <IconButton
+              icon={s.language === 'fa' ? ArrowRight : ArrowLeft}
+              label={t.back}
+              onClick={s.back}
             />
-          ))}
-          <nav aria-label={t.more} className="pm:flex pm:gap-3">
-            <Button
-              className={button}
-              disabled={!detail.messages.hasPrevPage}
-              onClick={() => void open(detail.conversation.id, detail.messages.page - 1)}
-            >
-              {t.previous}
-            </Button>
-            <Button
-              className={button}
-              disabled={!detail.messages.hasNextPage}
-              onClick={() => void open(detail.conversation.id, detail.messages.page + 1)}
-            >
-              {t.next}
-            </Button>
-          </nav>
+          )}
+          <IconButton
+            icon={s.detail?.conversation.status === 'closed' ? ArchiveRestore : Archive}
+            label={s.detail?.conversation.status === 'closed' ? t.reopen : t.archive}
+            disabled={!s.detail}
+            onClick={() =>
+              void s.changeConversation({
+                status: s.detail?.conversation.status === 'closed' ? 'open' : 'closed',
+              })
+            }
+          />
+          <IconButton
+            icon={MailOpen}
+            label={t.markUnread}
+            disabled={!s.detail}
+            onClick={() => void s.changeConversation({ unread: true })}
+          />
+          <IconButton
+            icon={MessageSquarePlus}
+            label={t.addNote}
+            disabled={!s.detail}
+            onClick={s.addNote}
+          />
+          <Separator orientation="vertical" className="pm:mx-1 pm:h-5" />
+          <IconButton
+            icon={RefreshCw}
+            label={t.refresh}
+            disabled={!s.detail || s.loading}
+            onClick={() => void s.refresh().catch(s.fail)}
+          />
+        </div>
+        <div className="pm:flex pm:gap-1">
+          <IconButton
+            icon={Reply}
+            label={t.reply}
+            disabled={!latest}
+            onClick={() => latest && s.act('reply', latest)}
+          />
+          <IconButton
+            icon={ReplyAll}
+            label={t.replyAll}
+            disabled={!latest}
+            onClick={() => latest && s.act('replyAll', latest)}
+          />
+          <IconButton
+            icon={Forward}
+            label={t.forward}
+            disabled={!latest}
+            onClick={() => latest && s.act('forward', latest)}
+          />
+        </div>
+      </header>
+      {s.detail ? (
+        <>
+          <div className="pm:grid pm:shrink-0 pm:gap-1 pm:border-b pm:px-4 pm:py-3">
+            <h2 dir="auto" className="pm:break-words pm:text-base pm:font-semibold">
+              {s.detail.conversation.subject || t.noSubject}
+            </h2>
+            <p className="pm:break-words pm:text-xs pm:text-muted-foreground">
+              {t.participants}: <bdi dir="ltr">{s.detail.conversation.participants.join(', ')}</bdi>
+            </p>
+          </div>
+          <ScrollArea className="pm:min-h-0 pm:flex-1">
+            {s.detail.messages.docs.map((message) => (
+              <Message
+                key={message.id}
+                message={message}
+                files={s.detail!.attachments.filter((file) =>
+                  message.data.attachments.map(String).includes(String(file.id)),
+                )}
+                apiPath={apiPath}
+                language={s.language}
+                formatDate={s.date}
+                act={messageAction}
+                retry={s.retry}
+                providerInspection={providerInspection}
+              />
+            ))}
+            {(s.detail.messages.hasNextPage || s.detail.messages.hasPrevPage) && (
+              <nav aria-label={t.more} className="pm:flex pm:justify-between pm:gap-2 pm:p-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!s.detail.messages.hasPrevPage}
+                  onClick={() =>
+                    void s.open(s.detail!.conversation.id, s.detail!.messages.page - 1)
+                  }
+                >
+                  {t.previous}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!s.detail.messages.hasNextPage}
+                  onClick={() =>
+                    void s.open(s.detail!.conversation.id, s.detail!.messages.page + 1)
+                  }
+                >
+                  {t.next}
+                </Button>
+              </nav>
+            )}
+          </ScrollArea>
+          {inline ? (
+            <div className="pm:max-h-[55dvh] pm:shrink-0 pm:overflow-y-auto pm:border-t pm:p-4">
+              {composer}
+            </div>
+          ) : (
+            latest && (
+              <footer className="pm:grid pm:shrink-0 pm:gap-3 pm:border-t pm:p-4">
+                <Button
+                  variant="outline"
+                  className="pm:justify-start pm:text-muted-foreground"
+                  onClick={() => s.act('reply', latest)}
+                >
+                  <Reply className="pm:size-4" aria-hidden="true" />
+                  {t.replyPlaceholder}
+                </Button>
+                <p className="pm:text-xs pm:text-muted-foreground">{t.sendHelp}</p>
+              </footer>
+            )
+          )}
         </>
+      ) : (
+        <div className="pm:flex pm:flex-1 pm:flex-col pm:items-center pm:justify-center pm:gap-3 pm:p-6 pm:text-center pm:text-muted-foreground">
+          <Mail className="pm:size-10 pm:stroke-1" aria-hidden="true" />
+          <h2 className="pm:text-base pm:font-medium pm:text-foreground">{t.selectConversation}</h2>
+          <p className="pm:max-w-64 pm:text-sm">{t.selectHelp}</p>
+        </div>
       )}
-      {seed && settings && (
-        <Composer
-          key={`${seed.id ?? 'new'}:${seed.action}:${seed.replyToMessage ?? ''}:${seed.kind}`}
-          seed={seed}
-          boxes={settings.mailboxes}
-          apiPath={apiPath}
-          language={language}
-          onDone={refresh}
-          onCancel={() => setSeed(undefined)}
-        />
-      )}
-    </main>
+    </section>
+  )
+  const navigation = (
+    <MailNavigation
+      state={s}
+      settingsOpen={settingsOpen}
+      onSettings={() => {
+        s.back()
+        setSettingsOpen(true)
+      }}
+      onNavigate={() => {
+        setNavigationOpen(false)
+      }}
+      onFolder={() => setSettingsOpen(false)}
+    />
+  )
+  // The resizer uses physical LTR coordinates. Reverse keyed panes for RTL,
+  // restoring each pane's text direction and preserving editor identity on resize.
+  const panels = [
+    <ResizablePanel
+      key="navigation"
+      id="navigation"
+      dir={s.language === 'fa' ? 'rtl' : 'ltr'}
+      defaultSize="18%"
+      minSize={desktop ? 140 : 0}
+      maxSize={desktop ? '25%' : '100%'}
+      className={!desktop ? 'pm:hidden!' : undefined}
+    >
+      {navigation}
+    </ResizablePanel>,
+    <ResizableHandle
+      key="navigation-handle"
+      withHandle
+      aria-label={t.resizeNavigation}
+      className={!desktop ? 'pm:hidden!' : undefined}
+    />,
+    ...(settingsOpen
+      ? [
+          <ResizablePanel
+            key="settings"
+            id="settings"
+            dir={s.language === 'fa' ? 'rtl' : 'ltr'}
+            defaultSize="82%"
+            minSize={desktop ? 320 : 0}
+            className={!desktop ? 'pm:h-full! pm:w-full!' : undefined}
+          >
+            <MailSettings state={s} />
+          </ResizablePanel>,
+        ]
+      : [
+          <ResizablePanel
+            key="messages"
+            id="messages"
+            dir={s.language === 'fa' ? 'rtl' : 'ltr'}
+            defaultSize="32%"
+            minSize={desktop ? 240 : 0}
+            className={!desktop ? (s.detail ? 'pm:hidden!' : 'pm:h-full! pm:w-full!') : undefined}
+          >
+            <MailList state={s} onSelect={(row) => void select(row)} />
+          </ResizablePanel>,
+          <ResizableHandle
+            key="messages-handle"
+            withHandle
+            aria-label={t.resizeMessages}
+            className={!desktop ? 'pm:hidden!' : undefined}
+          />,
+          <ResizablePanel
+            key="detail"
+            id="detail"
+            dir={s.language === 'fa' ? 'rtl' : 'ltr'}
+            defaultSize="50%"
+            minSize={desktop ? 260 : 0}
+            className={!desktop ? (s.detail ? 'pm:h-full! pm:w-full!' : 'pm:hidden!') : undefined}
+          >
+            {detail}
+          </ResizablePanel>,
+        ]),
+  ]
+  return (
+    <MailSurface.Provider
+      value={{ container, dir: s.language === 'fa' ? 'rtl' : 'ltr', closeLabel: t.closeLabel }}
+    >
+      <TooltipProvider delayDuration={350}>
+        <main
+          ref={setContainer}
+          className="payload-mail pm:my-3 pm:flex pm:h-[calc(100dvh-8rem)] pm:min-h-[36rem] pm:w-full pm:min-w-0 pm:flex-col pm:overflow-hidden pm:rounded-lg pm:border pm:text-sm"
+          dir={s.language === 'fa' ? 'rtl' : 'ltr'}
+          lang={s.language}
+        >
+          {!desktop && (
+            <header className="pm:flex pm:h-14 pm:shrink-0 pm:items-center pm:gap-3 pm:border-b pm:px-3">
+              <Sheet open={navigationOpen} onOpenChange={setNavigationOpen}>
+                <SheetTrigger asChild>
+                  <IconButton icon={Menu} label={t.navigation} />
+                </SheetTrigger>
+                <SheetContent
+                  side={s.language === 'fa' ? 'right' : 'left'}
+                  className="pm:flex pm:w-[min(18rem,90vw)] pm:flex-col pm:gap-0 pm:p-0"
+                >
+                  <SheetHeader className="pm:shrink-0 pm:border-b pm:px-4 pm:py-4 pm:pe-16 pm:text-start">
+                    <SheetTitle>{t.navigation}</SheetTitle>
+                    <SheetDescription className="pm:sr-only">{t.selectMailbox}</SheetDescription>
+                  </SheetHeader>
+                  {navigation}
+                </SheetContent>
+              </Sheet>
+              <span className="pm:font-semibold">{t.title}</span>
+              {settingsOpen && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="pm:ms-auto"
+                  onClick={() => setSettingsOpen(false)}
+                >
+                  {t.back}
+                </Button>
+              )}
+            </header>
+          )}
+          <div className="pm:min-h-0 pm:flex-1">
+            <ResizablePanelGroup
+              orientation="horizontal"
+              dir="ltr"
+              disabled={!desktop}
+              className={cn('pm:min-w-0', !desktop && 'pm:block!')}
+            >
+              {s.language === 'fa' ? [...panels].reverse() : panels}
+            </ResizablePanelGroup>
+          </div>
+          <Dialog
+            open={!!s.seed && !inline}
+            onOpenChange={(open) => {
+              if (!open) s.setSeed(undefined)
+            }}
+          >
+            <DialogContent className="pm:max-h-[90dvh] pm:w-[calc(100%-2rem)] pm:max-w-2xl pm:overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{title}</DialogTitle>
+                <DialogDescription>
+                  {s.seed?.kind === 'note' ? t.note : t.sendHelp}
+                </DialogDescription>
+              </DialogHeader>
+              {!inline && composer}
+            </DialogContent>
+          </Dialog>
+        </main>
+      </TooltipProvider>
+    </MailSurface.Provider>
   )
 }

@@ -8,7 +8,14 @@ import type {
   SubmitResult,
 } from '../types.js'
 import { MailError } from '../server/errors.js'
-import { address, addresses, attachment, messageId, references } from '../server/validation.js'
+import {
+  address,
+  addresses,
+  attachment,
+  messageId,
+  references,
+  senderName,
+} from '../server/validation.js'
 
 export type PostalOptions = {
   key: string
@@ -32,6 +39,23 @@ function string(value: unknown, max = 8192): string {
 export function postalProvider(options: PostalOptions): MailProvider {
   return {
     key: options.key,
+    label: 'Postal',
+    managementURL: () => {
+      try {
+        const url = new URL(options.apiURL?.() || '')
+        return url.protocol === 'https:' && !url.username && !url.password ? url.origin : undefined
+      } catch {
+        return undefined
+      }
+    },
+    ...(options.apiURL && options.apiKey
+      ? ({
+          inspect: async (message, mailbox) => {
+            const { inspectPostal } = await import('./postal-inspect.js')
+            return inspectPostal(options, message, mailbox)
+          },
+        } satisfies Partial<MailProvider>)
+      : {}),
     async receive(body, headers, kind) {
       const signature = headers.get('x-postal-signature-256')
       if (!signature || signature.length > 2048 || !/^[A-Za-z0-9+/]+=*$/.test(signature))
@@ -211,6 +235,8 @@ export async function parsePostalIncoming(
         .slice(-30),
       replyTo: addresses(parsed.replyTo?.text)[0],
       attachments,
+      providerId:
+        Number.isSafeInteger(data.id) && Number(data.id) > 0 ? String(data.id) : undefined,
       participants: [...new Set([...from, ...to, ...cc])],
       autoSubmitted: String(parsed.headers.get('auto-submitted') ?? ''),
       bounce: data.mail_from === '',
@@ -238,6 +264,7 @@ export async function parsePostalIncoming(
   if (attachments.length > limits.attachmentCount) throw new MailError('limit', 413)
   return {
     from: from[0],
+    fromName: senderName(string(data.from, 1024)),
     to,
     cc,
     bcc: [],
@@ -250,6 +277,7 @@ export async function parsePostalIncoming(
     inReplyTo: messageId(data.in_reply_to),
     references: references(data.references),
     attachments,
+    providerId: Number.isSafeInteger(data.id) && Number(data.id) > 0 ? String(data.id) : undefined,
     participants: [...new Set([...from, ...to, ...cc])],
     autoSubmitted: typeof data.auto_submitted === 'string' ? data.auto_submitted : '',
     bounce: data.bounce === true || data.mail_from === '',

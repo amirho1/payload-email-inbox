@@ -1,5 +1,27 @@
 # Contributing
 
+## Live development preview
+
+```sh
+nvm use
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+Open http://127.0.0.1:4101/admin/mail. The disposable local login is
+`agent@example.com` / `Synthetic-password-123!`.
+
+Saving `src/ui/**/*.tsx`, translations, or `src/styles.css` rebuilds the plugin and
+refreshes the browser through Next.js Fast Refresh. Keep editing repository source,
+not generated `dist/` or `.private/dev/plugin-live/`. The preview uses its own
+`.private/dev-data/` SQLite database and cookie prefix, signed synthetic ingress,
+and a local provider that captures outgoing MIME without delivering external mail.
+Its database survives preview restarts. Ctrl+C stops the app and both watchers.
+Set `MAIL_DEV_PORT=4102 pnpm dev` to use another loopback port.
+
+Development mirroring is separate from `pnpm test:consumer` and `pnpm test:e2e`,
+which continue to validate a clean, unmodified packed installation.
+
 Use Node 22.23.4 and the pnpm version pinned in package.json. Install with `pnpm install --frozen-lockfile`. Keep strict TypeScript and focused modules. Format with `pnpm format`; check with `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm test:consumer` and `pnpm test:e2e`. Consumer/browser checks require the packed artifact and real SQLite persistence, not source aliases. Install Chromium using `pnpm exec playwright install chromium`.
 
 Use only synthetic fixtures under reserved example domains. Never commit mailboxes, raw production mail, attachments, credentials, keys, private recovery exports or browser traces. Example accounts are disposable. Security bugs go to the private contact in SECURITY.md; ordinary bugs should include version, reproduction and redacted results in a GitHub issue. Pull requests should state the behavior change, validation and limits.

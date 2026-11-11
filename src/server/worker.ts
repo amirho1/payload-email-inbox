@@ -82,13 +82,15 @@ async function processIncoming(store: MailStore, work: Row, provider: MailProvid
   const attachments: MailID[] = []
   for (const [index, file] of mail.attachments.entries())
     attachments.push(await saveAttachment(store, box.key, file, `${work.key}:${index}`))
-  const data: MailData = { ...mail, attachments }
+  const { providerId, ...normalized } = mail
+  const data: MailData = { ...normalized, attachments }
   await store.unique(store.options.slugs.messages, 'dedupKey', String(work.key), {
     mailbox: box.key,
     conversation: String(conversation.id),
     kind: 'incoming',
     state: 'delivered-to-recipient-server',
     provider: box.provider,
+    ...(providerId ? { providerIds: [providerId] } : {}),
     messageId: data.messageId,
     data,
   })

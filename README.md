@@ -4,11 +4,11 @@
 
 Private staff email workflows inside an existing Payload admin. Postal remains the mail server. This package adds a paginated inbox, durable drafts, conversations, replies/reply-all/forward, internal notes, private attachments and delivery history. No IMAP, separate dashboard, Redis requirement, automatic replies, tracking or telemetry.
 
-**Status: experimental alpha; production verification is pending.** `payload-plugin-mail` is provisional: npm returned E404 on 2026-11-10; no name reservation or public npm release is claimed. Use the packed artifact from this repository. See [evidence](docs/evidence.md) for what has actually passed and remaining limitations.
+**Status: experimental alpha. See the evidence ledger for tested, pushed, deployed and recipient-verified states.** `payload-plugin-mail` is provisional: npm returned E404 on 2026-11-10; no name reservation or public npm release is claimed. Use the packed artifact from this repository. See [evidence](docs/evidence.md) for what has actually passed and remaining limitations.
 
 ## Compatibility
 
-The initial tested target is Node 22.23.4, Payload/UI/translations/SQLite adapter 3.90.2, Next 16.3.3 and React 19.2.6. Only SQLite is supported initially. Other adapters require a real atomic store implementation and equivalent integration/browser tests; supplying the interface alone does not establish compatibility.
+The initial tested target is Node 22.23.4, Payload/UI/translations/SQLite adapter 3.90.2, Next 16.4.1 and React 19.2.6. Only SQLite is supported initially. Other adapters require a real atomic store implementation and equivalent integration/browser tests; supplying the interface alone does not establish compatibility.
 
 ## Install from a packed artifact
 
@@ -17,7 +17,7 @@ pnpm install --frozen-lockfile
 pnpm build
 npm pack
 # In the host application:
-pnpm add /path/to/payload-plugin-mail-0.1.0-alpha.4.tgz
+pnpm add /path/to/payload-plugin-mail-0.1.0-alpha.5.tgz
 ```
 
 Add the plugin to `payload.config.ts`; keep the host email adapter and authentication intact:
@@ -61,7 +61,15 @@ Import `payload-plugin-mail/styles.css` once from the Payload root layout, along
 
 Invoke `processMail(payload, options, 10)` from an existing scheduler or Payload job every 10–30 seconds. Keep one shared options module. Every tick is bounded; SQLite conditional updates coordinate multiple workers. Do not run a tight unbounded request loop or rely on an in-memory queue.
 
+## Interface
+
+The admin uses the shadcn Mail layout: resizable navigation, message list and conversation panes on desktop; one active pane and a navigation sheet on mobile. Reused shadcn components retain Radix accessibility behavior, with scoped Tailwind styles, Lucide icons and English/Persian labels. Drafts, sent/queued/failed folders, counts and archive reflect application persistence. Filters support sender, primary To recipient, delivery state, conversation status and UTC date bounds.
+
+The plain-text composer also offers optional sanitized HTML source and save-and-preview. Provider details inspect only message IDs already owned by the selected mailbox. Postal administration remains in its dashboard; see the [capability matrix](docs/postal-capabilities.md).
+
 ## Runnable example and checks
+
+For live editing, run `pnpm dev` and open http://127.0.0.1:4101/admin/mail. The disposable local account is `agent@example.com` / `Synthetic-password-123!`. TypeScript and Tailwind hot reload; persisted synthetic data is kept in ignored `.private/dev-data`. This demo captures outgoing mail locally. Never deploy its seed credentials, secret or emulator endpoints.
 
 ```sh
 pnpm typecheck

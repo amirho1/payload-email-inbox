@@ -65,8 +65,8 @@ if (enabled) {
   )
   const { mailEndpoints } = await import('../dist/server/endpoints.js')
   const store = new MailStore(payload, resolveOptions(options))
-  for (let i = 0; i < 1000; i++)
-    await store.create(store.options.slugs.conversations, {
+  for (let i = 0; i < 1000; i++) {
+    const conversation = await store.create(store.options.slugs.conversations, {
       mailbox: 'support',
       threadKey: `perf-${i}`,
       subject: `Synthetic conversation ${i}`,
@@ -75,6 +75,29 @@ if (enabled) {
       status: 'open',
       unread: true,
     })
+    await store.create(store.options.slugs.messages, {
+      mailbox: 'support',
+      conversation: String(conversation.id),
+      kind: 'incoming',
+      state: 'delivered-to-recipient-server',
+      provider: 'postal',
+      dedupKey: `perf-message-${i}`,
+      revision: 1,
+      attempts: 0,
+      data: {
+        from: `sender-${i}@example.net`,
+        to: ['support@example.com'],
+        cc: [],
+        bcc: [],
+        subject: `Synthetic conversation ${i}`,
+        text: 'Synthetic representative preview سلام',
+        attachments: [],
+        references: [],
+        participants: ['support@example.com', `sender-${i}@example.net`],
+        messageId: `perf-${i}@example.net`,
+      },
+    })
+  }
   const req = await createLocalReq({ user: { id: 1, collection: 'users', role: 'agent' } }, payload)
   Object.defineProperty(req, 'url', {
     value: 'https://example.com/api/mail/inbox',
@@ -148,9 +171,9 @@ if (enabled) {
     burstReceipts: 100,
     burstMaxAckMs: Math.max(...ack),
     burstProcessingMs: performance.now() - start,
-    normalizedMessages: (
-      await payload.count({ collection: store.options.slugs.messages, overrideAccess: true })
-    ).totalDocs,
+    normalizedMessages:
+      (await payload.count({ collection: store.options.slugs.messages, overrideAccess: true }))
+        .totalDocs - 1000,
   })
 }
 await payload.destroy()

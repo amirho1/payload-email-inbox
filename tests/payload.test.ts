@@ -17,6 +17,7 @@ import { downloadAttachment } from '../src/server/attachments.js'
 import { composeMime } from '../src/server/mime.js'
 import { mailEndpoints } from '../src/server/endpoints.js'
 import { pruneMail } from '../src/server/retention.js'
+import { listMail, countMail, listQuery } from '../src/server/list.js'
 import type { SQLiteAdapter } from '@payloadcms/db-sqlite'
 import type { MailData, MailOptions, SubmitResult, MailID } from '../src/types.js'
 
@@ -561,4 +562,221 @@ it('durably deduplicates and completes incoming delivery events without creating
   expect(
     (await payload.count({ collection: 'mail-messages', overrideAccess: true })).totalDocs,
   ).toBe(before.totalDocs)
+})
+
+it('indexes real mail folders, previews and scoped counts without disclosing Bcc', async () => {
+  await incoming(88441, { subject: 'Indexed folders فارسی', plain_body: 'Indexed preview فارسی' })
+  await processMail(payload, options)
+  const received = (
+    await store.find(store.options.slugs.messages, {
+      dedupKey: { equals: 'postal:support:incoming:88441' },
+    })
+  ).docs[0]
+  expect(received.providerIds).toEqual(['88441'])
+  const saved = await saveDraft(
+    store,
+    agent,
+    {
+      ...draft(),
+      conversation: received.conversation,
+      subject: 'Indexed folders فارسی',
+      bcc: ['private-recipient@example.org'],
+    },
+    'indexed-folders-draft-0001',
+  )
+  await saveDraft(
+    store,
+    other,
+    {
+      ...draft(),
+      mailbox: 'private',
+      from: 'private@example.com',
+      subject: 'Indexed folders فارسی',
+    },
+    'indexed-private-draft-0001',
+  )
+  const scopedRequest = async (params: string, user = agent.user) => {
+    const req = await request(user as Record<string, unknown>)
+    Object.defineProperty(req, 'url', {
+      value: `https://example.com/api/mail/inbox?${params}`,
+      configurable: true,
+    })
+    return req
+  }
+  const page = await listMail(
+    store,
+    await scopedRequest('folder=drafts&search=Indexed&recipient=customer%40example.net'),
+  )
+  expect(page.docs).toHaveLength(1)
+  expect(String(page.docs[0].id)).toBe(String(saved.id))
+  expect(page.docs[0].preview).toBe(draft().text)
+  expect(JSON.stringify(page)).not.toContain('private-recipient@example.org')
+  expect((await listMail(store, await scopedRequest('folder=all&search=Indexed'))).totalDocs).toBe(
+    1,
+  )
+  const counts = await countMail(store, await scopedRequest(''))
+  expect(counts.drafts).toBeGreaterThan(0)
+  expect(counts.unread).toBeGreaterThan(0)
+  await expect(listMail(store, await scopedRequest('mailbox=private'))).rejects.toThrow('denied')
+  await expect(countMail(store, await scopedRequest('mailbox=private'))).rejects.toThrow('denied')
+  expect(
+    (await listMail(store, await scopedRequest('folder=all&sender=%27%20OR%201%3D1--'))).docs,
+  ).toHaveLength(0)
+  await store.mutate(store.options.slugs.conversations, String(received.conversation), () => ({
+    status: 'closed',
+  }))
+  expect(
+    (await listMail(store, await scopedRequest('folder=inbox&search=Indexed'))).docs,
+  ).toHaveLength(0)
+  expect(
+    (await listMail(store, await scopedRequest('folder=archived&search=Indexed'))).docs,
+  ).toHaveLength(1)
+  expect(
+    (await listMail(store, await scopedRequest('status=closed&search=Indexed'))).docs,
+  ).toHaveLength(1)
+  expect((await store.get(store.options.slugs.messages, saved.id)).state).toBe('draft')
+})
+
+it('preserves reply headers and Message-ID when reopening and editing a durable draft', async () => {
+  await incoming(88442, { subject: 'Durable reply edit' })
+  await processMail(payload, options)
+  const received = (
+    await store.find(store.options.slugs.messages, {
+      dedupKey: { equals: 'postal:support:incoming:88442' },
+    })
+  ).docs[0]
+  const input = {
+    ...draft(),
+    subject: 'Re: Durable reply edit',
+    conversation: received.conversation,
+    action: 'reply',
+    replyToMessage: received.id,
+  }
+  const saved = await saveDraft(store, agent, input, 'durable-reply-edit-0001')
+  const edited = await saveDraft(
+    store,
+    agent,
+    {
+      ...draft(),
+      subject: 'Re: Durable reply edit',
+      conversation: saved.conversation,
+      action: 'compose',
+      text: 'Edited after reopening — پس از بازکردن',
+    },
+    'durable-reply-edit-0002',
+    saved.id,
+  )
+  expect(edited.data).toMatchObject({
+    messageId: (saved.data as MailData).messageId,
+    inReplyTo: 'incoming-88442@example.net',
+    references: ['incoming-88442@example.net'],
+  })
+  const mime = await composeMime(edited.data as MailData, payload, options.mailboxes[0])
+  expect(mime.toString()).toMatch(/^In-Reply-To: <incoming-88442@example.net>/m)
+})
+
+it('validates bounded ISO date, delivery and pagination filters', () => {
+  for (const params of [
+    'after=2026-02-30',
+    'after=2026-12-01&before=2026-11-01',
+    'delivery=made-up',
+    'page=1.5',
+    'folder=spam',
+    `search=${'x'.repeat(121)}`,
+  ])
+    expect(() => listQuery(new URLSearchParams(params), 25)).toThrow('invalid')
+  expect(
+    listQuery(new URLSearchParams('after=2026-11-10&before=2026-11-10&delivery=failed'), 25),
+  ).toMatchObject({
+    after: '2026-11-10T00:00:00.000Z',
+    before: '2026-11-11T00:00:00.000Z',
+    delivery: 'failed',
+  })
+})
+
+it('enforces normal staff, origin and mailbox checks before provider inspection', async () => {
+  const called: MailID[] = []
+  const inspectedOptions = resolveOptions({
+    ...options,
+    providers: options.providers!.map((provider) => ({
+      ...provider,
+      inspect: async (record) => {
+        called.push(record.id)
+        return { messages: [] }
+      },
+    })),
+  })
+  const endpoint = mailEndpoints(inspectedOptions).find(
+    (endpoint) => endpoint.path === '/mail/provider/:id',
+  )!
+  const owned = await saveDraft(
+    store,
+    agent,
+    { ...draft(), subject: 'Provider permissions' },
+    'provider-permission-0001',
+  )
+  const privateDraft = await saveDraft(
+    store,
+    other,
+    { ...draft(), mailbox: 'private', from: 'private@example.com' },
+    'provider-private-0001',
+  )
+  for (const user of [null, nonstaff.user]) {
+    const response = await endpoint.handler(
+      await request(user as Record<string, unknown> | null, '{}', undefined, {
+        id: String(owned.id),
+      }),
+    )
+    expect(response.status).toBe(403)
+  }
+  expect(
+    (
+      await endpoint.handler(
+        await request(agent.user as Record<string, unknown>, '{}', undefined, {
+          id: String(privateDraft.id),
+        }),
+      )
+    ).status,
+  ).toBe(404)
+  expect(
+    (
+      await endpoint.handler(
+        await request(
+          agent.user as Record<string, unknown>,
+          '{}',
+          new Headers({ origin: 'https://untrusted.example' }),
+          { id: String(owned.id) },
+        ),
+      )
+    ).status,
+  ).toBe(403)
+  expect(called).toEqual([])
+  expect(
+    (
+      await endpoint.handler(
+        await request(agent.user as Record<string, unknown>, '{}', undefined, {
+          id: String(owned.id),
+        }),
+      )
+    ).status,
+  ).toBe(200)
+  expect(called).toEqual([owned.id])
+})
+
+it('exposes only safe HTTPS provider dashboard links in staff configuration', async () => {
+  for (const [url, expected] of [
+    ['javascript:alert(1)', undefined],
+    ['https://user:secret@postal.example.com', undefined],
+    ['http://postal.example.com', undefined],
+    ['invalid', undefined],
+    ['https://postal.example.com/org/example', 'https://postal.example.com/org/example'],
+  ]) {
+    const config = mailEndpoints({
+      ...store.options,
+      providers: [{ ...store.options.providers![0], managementURL: () => url! }],
+    }).find((endpoint) => endpoint.path === '/mail/config')!
+    const response = await config.handler(agent)
+    expect(response.status).toBe(200)
+    expect((await response.json()).providers[0].managementURL).toBe(expected)
+  }
 })

@@ -7,7 +7,7 @@
 - `example`: runnable synthetic Payload SQLite app. `scripts/consumer.mjs`: tarball installation proof. `tests`: unit/real SQLite/browser cases.
 - Read docs/progress.md and docs/evidence.md before continuing; distinguish implemented/tested/pushed/deployed/recipient-confirmed.
 
-Commands: `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm lint`, `pnpm format`, `pnpm format:check`, `pnpm test`, `pnpm build`, `pnpm test:consumer`, `pnpm test:e2e`. Chromium: `pnpm exec playwright install chromium`. Node target 22.23.4. Check the ledger for current results; command presence is not a pass.
+Commands: `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm lint`, `pnpm format`, `pnpm format:check`, `pnpm test`, `pnpm build`, `pnpm test:consumer`, `pnpm test:e2e`. Chromium: `pnpm exec playwright install chromium`. Node target 22.23.4; current tested Next target 16.4.1 with Payload 3.90.2 and React 19.2.6. `pnpm dev` starts isolated hot reload on loopback4101. After `pnpm test:consumer`, run `pnpm measure` and `pnpm review:dependencies`. Check the ledger for current results; command presence is not a pass.
 
 Use the Graphify skill: query graphify-out/graph.json with its vocabulary first, inspect cited source, then update the scoped source graph with `GRAPHIFY_OUT="$PWD/graphify-out" graphify update src`. Never scan secrets, private mail, attachments, `.private`, traces, dependencies or generated builds. Graphify is not a runtime dependency. The Moftkhar host supplies a reviewed Payload skill at `.agents/skills/payload/SKILL.md`; use it when available, otherwise official installed-version documentation. Do not pretend missing skills exist.
 

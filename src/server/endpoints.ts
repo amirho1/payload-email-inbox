@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import type { Endpoint, PayloadRequest, Where } from 'payload'
-import type { MailData, ResolvedOptions } from '../types.js'
+import type { Endpoint, PayloadRequest } from 'payload'
+import type { MailData, MailRecord, ResolvedOptions } from '../types.js'
 import { MailStore } from './store.js'
 import { authorize, checkOrigin } from './permissions.js'
 import { boundedBody } from './validation.js'
@@ -8,9 +8,21 @@ import { MailError, errorResponse } from './errors.js'
 import { saveDraft, queueDraft } from './drafts.js'
 import { downloadAttachment, saveAttachment } from './attachments.js'
 import { isolatedHtml } from './sanitize.js'
+import { listMail, countMail } from './list.js'
 
 function json(value: unknown) {
   return Response.json(value, { headers: { 'Cache-Control': 'private, no-store' } })
+}
+
+function managementURL(providerURL: string | undefined) {
+  if (!providerURL) return undefined
+  try {
+    const url = new URL(providerURL)
+    if (url.protocol !== 'https:' || url.username || url.password) return undefined
+    return url.href
+  } catch {
+    return undefined
+  }
 }
 
 /** Public API wrappers share authorization, CSRF, bounds, and privacy-safe errors. */
@@ -52,30 +64,23 @@ export function mailEndpoints(o: ResolvedOptions): Endpoint[] {
         timeZone: o.timeZone ?? 'UTC',
         calendar: o.calendar ?? 'gregory',
         numberingSystem: o.numberingSystem ?? 'latn',
+        providers: o.providers?.map((provider) => ({
+          key: provider.key,
+          label: provider.label || provider.key,
+          inspect: !!provider.inspect,
+          managementURL: managementURL(provider.managementURL?.()),
+        })),
       }),
     ),
-    make('/inbox', 'get', async (s, req) => {
-      const q = new URL(req.url!).searchParams
-      const page = Math.max(1, Math.min(10000, Number(q.get('page')) || 1))
-      if (!Number.isInteger(page)) throw new MailError('invalid')
-      const search = (q.get('search') ?? '').slice(0, 120)
-      const and: Where[] = []
-      if (q.get('mailbox')) and.push({ mailbox: { equals: q.get('mailbox') } })
-      if (['open', 'closed'].includes(q.get('status') ?? ''))
-        and.push({ status: { equals: q.get('status') } })
-      if (q.get('unread') === 'true') and.push({ unread: { equals: true } })
-      if (search)
-        and.push({ or: [{ subject: { contains: search } }, { sender: { contains: search } }] })
-      return json(
-        await s.find(
-          o.slugs.conversations,
-          and.length ? { and } : {},
-          o.limits.pageSize,
-          req,
-          page,
-          '-updatedAt',
-        ),
-      )
+    make('/inbox', 'get', async (s, req) => json(await listMail(s, req))),
+    make('/counts', 'get', async (s, req) => json(await countMail(s, req))),
+    make('/provider/:id', 'post', async (s, req) => {
+      const row = await s.get(o.slugs.messages, String(req.routeParams?.id), req)
+      const boxes = await authorize(req, o, String(row.mailbox))
+      const box = boxes.find((box) => box.key === row.mailbox)
+      const provider = o.providers?.find((provider) => provider.key === row.provider)
+      if (!box || !provider?.inspect || row.kind === 'note') throw new MailError('unavailable', 503)
+      return json(await provider.inspect(row as unknown as MailRecord, box))
     }),
     make('/conversation/:id', 'get', async (s, req) => {
       const id = String(req.routeParams?.id)

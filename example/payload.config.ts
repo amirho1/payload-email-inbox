@@ -10,6 +10,7 @@ import { readFile, mkdir, writeFile, readdir } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import type { MailRecord, ProviderInspection } from 'payload-plugin-mail'
 
 const root = dirname(fileURLToPath(import.meta.url))
 const fixture = process.env.MAIL_FIXTURE_DIR
@@ -44,6 +45,26 @@ const options: MailOptions = {
         key: 'emulator',
         publicKeys: async () => [await readFile(join(fixture, 'public.pem'), 'utf8')],
       }),
+      label: 'Local provider emulator',
+      async inspect(message: MailRecord): Promise<ProviderInspection> {
+        if (message.kind === 'note') throw new Error('Internal notes have no provider record')
+        const direction = message.kind
+        return {
+          messages: (message.data.activeProviderIds || message.providerIds || []).map((id) => ({
+            id,
+            status: 'Captured',
+            direction,
+            held: false,
+            headers: {
+              'message-id': [`<${message.data.messageId}>`],
+              from: [message.data.from],
+              to: message.data.to,
+              ...(message.data.inReplyTo ? { 'in-reply-to': [`<${message.data.inReplyTo}>`] } : {}),
+            },
+            deliveries: [],
+          })),
+        }
+      },
       async submit(data, box, payload) {
         const mime = await composeMime(data, payload, box)
         // The emulator captures what a real provider receives, including envelope Bcc, in private files.

@@ -41,9 +41,12 @@ for (const language of ['en', 'fa'] as const) {
     await page.getByRole('button', { name: 'Login', exact: true }).click()
     await expect(page).not.toHaveURL(/login/)
     await page.goto('/admin/mail')
-    if (fa) await page.getByLabel('Interface language').selectOption('fa')
+    if (fa) {
+      await page.getByRole('combobox', { name: 'Interface language' }).click()
+      await page.getByRole('option', { name: 'فارسی' }).click()
+    }
     await expect(page.locator('main.payload-mail')).toHaveAttribute('dir', fa ? 'rtl' : 'ltr')
-    await expect(page.locator('a[href="/admin/collections/users"]')).toBeVisible()
+    await expect(page.locator('a[href="/admin/collections/users"]')).toHaveCount(1)
     const id = fa ? 502 : 501
     const subject = `Controlled synthetic ${language} سلام`
     const incoming = {
@@ -68,10 +71,13 @@ for (const language of ['en', 'fa'] as const) {
     await signed(page.request, '/api/mail/postal/emulator/incoming', incoming)
     await signed(page.request, '/api/mail/postal/emulator/incoming', incoming)
     await tick(page)
-    await page.getByRole('button', { name: fa ? 'تازه‌سازی' : 'Refresh', exact: true }).click()
+    await page
+      .getByRole('region', { name: fa ? 'صندوق ورودی' : 'Inbox', exact: true })
+      .getByRole('button', { name: fa ? 'تازه‌سازی' : 'Refresh', exact: true })
+      .click()
     const item = page.getByRole('button').filter({ hasText: subject })
     await expect(item).toHaveCount(1)
-    await expect(item).toContainText(fa ? 'خوانده‌نشده' : 'Unread')
+    await expect(item.getByLabel(fa ? 'خوانده‌نشده' : 'Unread', { exact: true })).toBeVisible()
     await item.click()
     const downloadPromise = page.waitForEvent('download')
     await page.getByRole('link', { name: 'سلام.txt' }).click()
@@ -94,13 +100,19 @@ for (const language of ['en', 'fa'] as const) {
       .getByLabel(fa ? 'متن نامه' : 'Message', { exact: true })
       .fill('Browser reply پاسخ آزمایشی')
     await page
+      .getByRole('button', { name: new RegExp(fa ? 'گیرندگان و موضوع' : 'Recipients and subject') })
+      .click()
+    await page
       .getByLabel(fa ? 'رونوشت پنهان (خصوصی)' : 'Bcc (private)', { exact: true })
       .fill('hidden@example.net')
     await page
       .getByRole('button', { name: fa ? 'ذخیرهٔ پیش‌نویس' : 'Save draft', exact: true })
       .click()
     await expect(
-      page.getByRole('status').filter({ hasText: fa ? 'پیش‌نویس ذخیره شد' : 'Draft saved' }),
+      page
+        .getByRole('form', { name: fa ? 'نوشتن نامه' : 'Compose', exact: true })
+        .getByRole('status')
+        .filter({ hasText: fa ? 'پیش‌نویس ذخیره شد' : 'Draft saved' }),
     ).toBeVisible()
     await page
       .getByRole('button', { name: fa ? 'ارسال' : 'Send', exact: true })
@@ -143,7 +155,10 @@ for (const language of ['en', 'fa'] as const) {
     await page.reload()
     await page.getByRole('button').filter({ hasText: subject }).click()
     await expect(
-      page.getByRole('status').filter({ hasText: fa ? 'با تأخیر' : 'Delayed' }),
+      page
+        .getByRole('article', { name: fa ? 'ارسالی' : 'Outgoing', exact: true })
+        .getByText(fa ? 'با تأخیر' : 'Delayed', { exact: true })
+        .first(),
     ).toBeVisible()
     await signed(page.request, '/api/mail/postal/emulator/event', {
       event: 'MessageBounced',
@@ -155,7 +170,10 @@ for (const language of ['en', 'fa'] as const) {
     await page.reload()
     await page.getByRole('button').filter({ hasText: subject }).click()
     await expect(
-      page.getByRole('status').filter({ hasText: fa ? 'برگشتی' : 'Bounced' }),
+      page
+        .getByRole('article', { name: fa ? 'ارسالی' : 'Outgoing', exact: true })
+        .getByText(fa ? 'برگشتی' : 'Bounced', { exact: true })
+        .first(),
     ).toBeVisible()
     await page
       .getByRole('button', { name: fa ? 'افزودن یادداشت داخلی' : 'Add internal note' })
@@ -165,7 +183,14 @@ for (const language of ['en', 'fa'] as const) {
       .fill('Synthetic private note')
     await page.getByRole('button', { name: fa ? 'ذخیرهٔ پیش‌نویس' : 'Save draft' }).click()
     await page.getByRole('button', { name: fa ? 'انصراف' : 'Cancel' }).click()
-    await expect(page.getByText('Synthetic private note', { exact: true })).toBeVisible()
+    await expect(
+      page
+        .getByRole('article', {
+          name: fa ? 'یادداشت داخلی — هرگز ایمیل نمی‌شود' : 'Internal note — never emailed',
+          exact: true,
+        })
+        .getByText('Synthetic private note', { exact: true }),
+    ).toBeVisible()
     const axe = await new AxeBuilder({ page }).include('.payload-mail').analyze()
     expect(axe.violations).toEqual([])
     for (const width of [320, 390, 768, 1440]) {
@@ -206,7 +231,7 @@ test('compose, upload, reply-all, forward, failure retry and unknown-state actio
   await page.getByLabel('To', { exact: true }).fill('customer@example.net')
   await page.getByLabel('Subject', { exact: true }).fill('[failed] Controlled compose')
   await page.getByLabel('Message', { exact: true }).fill('Synthetic composed message')
-  await page.getByLabel('Attach files').setInputFiles({
+  await page.locator('input[type="file"]').setInputFiles({
     name: 'synthetic.txt',
     mimeType: 'text/plain',
     buffer: Buffer.from('Synthetic upload'),
@@ -215,18 +240,26 @@ test('compose, upload, reply-all, forward, failure retry and unknown-state actio
   await expect(page.getByRole('form', { name: 'Compose', exact: true })).toHaveCount(0)
   await tick(page)
   await page.reload()
+  await page.getByRole('button', { name: /^All mail/ }).click()
   await page.getByRole('button').filter({ hasText: '[failed] Controlled compose' }).click()
   await expect(page.getByRole('button', { name: 'Retry failed send' })).toBeVisible()
   await page.getByRole('button', { name: 'Retry failed send' }).click()
   await tick(page)
   await page.reload()
+  await page.getByRole('button', { name: /^All mail/ }).click()
   await page.getByRole('button').filter({ hasText: '[failed] Controlled compose' }).click()
-  await expect(page.getByRole('status').filter({ hasText: 'Failed' })).toBeVisible()
-  await page.getByRole('button', { name: 'Reply all', exact: true }).click()
+  await expect(
+    page
+      .getByRole('article', { name: 'Outgoing', exact: true })
+      .getByText('Failed', { exact: true })
+      .first(),
+  ).toBeVisible()
+  await page.getByRole('button', { name: 'Reply all', exact: true }).first().click()
+  await page.getByRole('button', { name: /Recipients and subject/ }).click()
   await expect(page.getByLabel('Bcc (private)', { exact: true })).toHaveValue('')
   await expect(page.getByLabel('To', { exact: true })).toHaveValue('customer@example.net')
   await page.getByRole('button', { name: 'Cancel', exact: true }).click()
-  await page.getByRole('button', { name: 'Forward', exact: true }).click()
+  await page.getByRole('button', { name: 'Forward', exact: true }).first().click()
   await expect(page.getByLabel('Message', { exact: true })).toHaveValue(/Forwarded message/)
   await page.getByLabel('To', { exact: true }).fill('forward@example.net')
   await page.getByLabel('Subject', { exact: true }).fill('[ambiguous] Controlled forward')
@@ -234,10 +267,11 @@ test('compose, upload, reply-all, forward, failure retry and unknown-state actio
   await expect(page.getByRole('form', { name: 'Compose', exact: true })).toHaveCount(0)
   await tick(page)
   await page.reload()
+  await page.getByRole('button', { name: /^All mail/ }).click()
   await page.getByRole('button').filter({ hasText: '[failed] Controlled compose' }).click()
   await expect(
     page.getByText(
-      'Check Postal before any further send. This submission may already have been accepted.',
+      'Check the provider before any further send. This submission may already have been accepted.',
     ),
   ).toBeVisible()
   const unknown = page
@@ -286,7 +320,10 @@ test('settings transport failure disables compose and Refresh recovers through t
   await expect(inbox.getByRole('alert')).toBeVisible()
   await expect(compose).toBeDisabled()
   recover = true
-  await page.getByRole('button', { name: 'Refresh', exact: true }).click()
+  await page
+    .getByRole('region', { name: 'Inbox', exact: true })
+    .getByRole('button', { name: 'Refresh', exact: true })
+    .click()
   await expect(compose).toBeEnabled()
   await expect(inbox.getByRole('alert')).toHaveCount(0)
   await compose.click()

@@ -29,6 +29,12 @@ export function addresses(value: string | string[] | null | undefined): string[]
   return [...new Set(parsed.map((p) => address(p.address ?? '')))]
 }
 
+/** Preserve a bounded Unicode display name from the processed Postal header format. */
+export function senderName(value: string): string | undefined {
+  addresses(value)
+  return addressParser(value, { flatten: true })[0]?.name?.slice(0, 256) || undefined
+}
+
 /** Accept a single conservative Message-ID; malformed headers do not thread. */
 export function messageId(value: unknown): string | undefined {
   if (typeof value !== 'string' || value.length > 998) return

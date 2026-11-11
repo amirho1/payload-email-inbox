@@ -1,0 +1,8 @@
+{
+  "nodes": 271,
+  "edges": 1014,
+  "missingEndpoints": 0,
+  "selfLoops": 0,
+  "sourceRoot": "src",
+  "scope": "library TypeScript source only; no private mail, secrets, dependencies or generated build output"
+}

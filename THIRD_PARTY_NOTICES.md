@@ -1,6 +1,8 @@
 # Third-party notices
 
-The small native Button primitive in src/ui/button.tsx is adapted from shadcn/ui. Variant/Slot dependencies are omitted; host styling is preserved. Upstream: https://github.com/shadcn-ui/ui
+The components under `src/ui/components/` are adapted from the official shadcn/ui registry (MIT): Button, Input, Textarea, Badge, Skeleton, Separator, Tabs, Dialog, Tooltip, Select, DropdownMenu, Avatar, ScrollArea, Sheet and Resizable. They retain Radix primitives, class-variance-authority and scoped Tailwind utilities. Resizable uses the current v4 API wrapper. Exact upstream URLs and source SHA-256 hashes are recorded in `docs/shadcn-sources.json`.
+
+Upstream: https://github.com/shadcn-ui/ui
 
 MIT License
 

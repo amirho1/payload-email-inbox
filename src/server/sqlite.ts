@@ -1,9 +1,11 @@
 import type { SQLiteAdapter } from '@payloadcms/db-sqlite'
 import type { AtomicStore } from '../types.js'
+import { sqliteMailQueries } from './sqlite-queries.js'
 
 /** SQLite 3.90.2 only. One conditional statement; Payload bulk updates are not atomic CAS. */
 export function sqliteAtomicStore(): AtomicStore {
   return {
+    read: sqliteMailQueries(),
     async pruneConversation(payload, slugs, id, before) {
       const db = payload.db as unknown as SQLiteAdapter
       if (db.name !== 'sqlite') throw new Error('mail:unsupported-adapter')

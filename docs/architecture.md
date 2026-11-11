@@ -33,3 +33,9 @@ No autonomous response is ever triggered. Operators review auto-submitted/bounce
 ## UI
 
 Plain-text-first React composer, native accessible controls, compiled prefixed Tailwind utilities, no Preflight/global theme replacement. Host Payload language/session/theme are reused. Message HTML is a server-sanitized sandboxed opt-in view. Remote images require another explicit per-message action and are never fetched by the server.
+
+## Admin read model and provider inspection
+
+The shadcn client is split into navigation, paginated list, conversation messages, composer and bounded provider details. Radix portals are attached to the mail surface so scoped theme variables and RTL/LTR survive dialogs and menus. Keyed resizable panes remain mounted across mobile/desktop changes; inline draft state is not discarded by a breakpoint. CSS property defaults and Tailwind internal variables are isolated from host styles. Only used registry variants are shipped; source provenance and MIT notices are retained.
+
+The optional atomic read interface supplies indexed list/count operations. SQLite binds all request values and scopes by authorized mailbox before selection; returned IDs are materialized through Payload with `req` and `overrideAccess:false`. Folder counts are real application aggregates; there is no fake Postal inbox/list API. Inspecting a provider message first authorizes its persisted application row, then invokes the configured provider's read-only, bounded RPCs. No client-supplied provider ID, callback URL or API credential is trusted.

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0-alpha.5 — unreleased
+
+- Reuse official shadcn/Radix components for resizable desktop mail panes, mobile navigation/dialogs, keyboard controls, scoped themes and en/fa RTL/LTR.
+- Add permission-scoped indexed folders/counts and sender/recipient/delivery/date filters.
+- Add optional bounded Postal message/header/delivery inspection using owned provider IDs; no invented management or requeue API.
+- Add HTML source save-and-preview, reopened reply-draft header preservation, anonymous login redirects, and isolated hot-reloading local development.
+- Isolate Tailwind property defaults and variables from host styles; retain upstream component licenses.
+
 ## 0.1.0-alpha.4 — unreleased
 
 - Authenticate and durably deduplicate Postal incoming-delivery status events, then complete them without changing outgoing history or creating correspondence.
@@ -21,4 +29,4 @@
 - English/Persian admin inbox, composer, internal notes and permission-checked attachments.
 - Real persistence tests and packed consumer/browser fixture.
 
-Production and recipient verification remain pending. No npm publication is claimed.
+Core controlled production recipient verification is recorded in docs/progress.md. Each new release still requires its own checks and deployment identity verification. No npm publication is claimed.

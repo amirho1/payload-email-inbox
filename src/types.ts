@@ -54,6 +54,7 @@ export type MailData = {
 }
 export type MailRecord = {
   id: MailID
+  dedupKey?: string
   mailbox: string
   conversation?: MailID
   kind: 'incoming' | 'outgoing' | 'note'
@@ -84,7 +85,57 @@ export type SubmitResult =
   | { state: 'provider-accepted'; ids: string[] }
   | { state: 'failed'; code: string; retryable?: boolean }
   | { state: 'ambiguous'; code: string }
-export type NormalizedIncoming = Omit<MailData, 'attachments'> & { attachments: AttachmentInput[] }
+export type NormalizedIncoming = Omit<MailData, 'attachments'> & {
+  attachments: AttachmentInput[]
+  providerId?: string
+}
+export type MailFolder = 'inbox' | 'all' | 'sent' | 'drafts' | 'queued' | 'failed' | 'archived'
+export type MailListQuery = {
+  folder: MailFolder
+  search: string
+  sender: string
+  recipient: string
+  after?: string
+  before?: string
+  delivery?: DeliveryState
+  unread: boolean
+  status?: 'open' | 'closed'
+  page: number
+  pageSize: number
+}
+export type MailCounts = Record<MailFolder | 'unread', number>
+/** Indexed IDs are materialized through the permission-checked Payload Local API. */
+export type MailReadStore = {
+  list: (
+    payload: Payload,
+    slugs: Slugs,
+    mailboxKeys: string[],
+    query: MailListQuery,
+  ) => Promise<{
+    items: { id: MailID; conversationId: MailID; messageId?: MailID }[]
+    totalDocs: number
+  }>
+  counts: (payload: Payload, slugs: Slugs, mailboxKeys: string[]) => Promise<MailCounts>
+}
+export type ProviderInspection = {
+  messages: {
+    id: string
+    status: string
+    direction: 'incoming' | 'outgoing'
+    size?: number
+    held: boolean
+    spam?: boolean
+    receivedWithTLS?: boolean
+    headers: Record<string, string[]>
+    deliveries: {
+      status: string
+      timestamp: number
+      tls: boolean
+      summary: string
+      smtpCode?: string
+    }[]
+  }[]
+}
 export type DeliveryEvent = { providerId: string; state: DeliveryState; timestamp: number }
 export type ProviderReceipt = {
   key: string
@@ -94,6 +145,10 @@ export type ProviderReceipt = {
 }
 export type MailProvider = {
   key: string
+  /** Public provider capabilities; credentials remain inside the server closure. */
+  label?: string
+  managementURL?: () => string | undefined
+  inspect?: (message: MailRecord, mailbox: Mailbox) => Promise<ProviderInspection>
   /** Authenticate exact bytes using deployment-trusted keys, then validate bounded input. */
   receive?: (
     body: Uint8Array,
@@ -107,6 +162,8 @@ export type MailProvider = {
 export type AtomicPatch = Record<string, string | number | boolean | null | object>
 /** Internal CAS only; callers must authorize before invoking. No SQL identifiers from requests. */
 export type AtomicStore = {
+  /** Optional indexed mailbox reads. The supplied SQLite adapter implements these. */
+  read?: MailReadStore
   pruneConversation?: (
     payload: Payload,
     slugs: Slugs,

@@ -17,6 +17,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check && pnpm lint && pnpm typecheck && pnpm test
+      - run: pnpm review:dependencies
       - run: pnpm test:consumer
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
@@ -30,3 +31,5 @@ jobs:
         env:
           MAIL_FIXTURE_DIR: ${{ github.workspace }}/.private/fixture
           PAYLOAD_CONFIG_PATH: ${{ github.workspace }}/.private/consumer/payload.config.ts
+
+      - run: pnpm measure

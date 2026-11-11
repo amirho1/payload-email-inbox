@@ -31,6 +31,7 @@ export function payloadMail(options: MailOptions): Plugin {
       path: 'payload-plugin-mail/rsc#MailView',
       serverProps: {
         initialLanguage: o.language,
+        loginURL: `${config.routes?.admin ?? '/admin'}/login?redirect=${encodeURIComponent(`${config.routes?.admin ?? '/admin'}${o.adminPath}`)}`,
         authorizeMail: (req: Parameters<NonNullable<MailOptions['isStaff']>>[0]) =>
           o.isStaff?.(req) ?? false,
       },

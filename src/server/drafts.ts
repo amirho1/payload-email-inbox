@@ -99,6 +99,10 @@ export async function saveDraft(
     )
       throw new MailError('conflict', 409)
     data.messageId = (original.data as MailData).messageId
+    if (draft.action === 'compose' && !draft.replyToMessage) {
+      data.inReplyTo = (original.data as MailData).inReplyTo
+      data.references = (original.data as MailData).references
+    }
     if (!(await store.cas(store.options.slugs.messages, original, { data })))
       throw new MailError('conflict', 409)
     return { ...original, data, revision: original.revision + 1 }

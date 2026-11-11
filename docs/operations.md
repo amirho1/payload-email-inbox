@@ -28,3 +28,11 @@ Rehearse into a new temporary database with no production provider credentials/n
 - Failed receipt: inspect only redacted code first, preserve raw work, test the same synthetic structure locally.
 - SQLite busy: reduce workers/batch, check long transactions and WAL/busyTimeout; never replace DB/volumes.
 - Import-map/component failure: install the tarball, import CSS once and regenerate import map with the installed version.
+
+## Inbox and development troubleshooting
+
+- If Postal says accepted with no endpoint, the message has not been delivered to the plugin. Verify the configured incoming route and authenticated readiness before any controlled redelivery. Do not repeatedly click redeliver.
+- Inbox contains open conversations with incoming mail. Use All mail for purely outgoing conversations, Drafts for outgoing drafts, Archive for closed threads, and Failed for failed/bounced/ambiguous outgoing messages. Clear search and advanced filters when checking retained messages. Counts reflect authorized mailboxes only.
+- Anonymous admin visitors go to the host login. An authenticated nonstaff account is still denied; sign out and use an existing authorized staff account. Never grant privileges from an incoming sender address.
+- Provider inspection is explicit, bounded and read only. Failure does not alter persisted delivery history. Unknown acceptance still requires operator reconciliation before another send.
+- `pnpm dev` uses loopback4101 and isolated synthetic data; browser tests use4100 and another database. The development seed is idempotent and its provider sends no network mail. Do not copy the demo's credentials or endpoints into production.
