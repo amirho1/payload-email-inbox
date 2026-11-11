@@ -1,5 +1,5 @@
 {
-  "observedAtUtc": "2026-11-11T07:00:56.590875+00:00",
+  "observedAtUtc": "2026-11-11T07:17:33.451192+00:00",
   "hostRepository": "amirho1/moftkhar",
   "hostCommit": "669035640f053ec462468dc24d80b742ef28df78",
   "package": "payload-plugin-mail@0.1.0-alpha.5",
@@ -25,7 +25,12 @@
     "uuid": "b87aeb23-018c-4edb-9674-acd3ae662116",
     "httpCodes": [200, 200],
     "smtpResubmitted": false,
-    "workerCompletionVerified": false
+    "workerCompletionVerified": true,
+    "applicationState": "delivered-to-recipient-server",
+    "outgoingAttempts": 1,
+    "outgoingMessageCount": 1,
+    "deliveredHistoryEntries": 1,
+    "preservedThreadMessageCount": 3
   },
   "controlledNotification": {
     "providerId": 7,
@@ -33,14 +38,43 @@
     "providerStatus": "Sent",
     "tls": true,
     "queued": false,
-    "gmailInboxObserved": false
+    "gmailInboxObserved": true,
+    "gmailMatchingMessageCount": 1,
+    "gmailFromMatches": true,
+    "gmailRecipientMatches": true,
+    "persianAndEnglishPreserved": true,
+    "gmailMailedBy": "psrp.notify.moftkhar.ir",
+    "gmailSignedBy": "notify.moftkhar.ir",
+    "gmailTlsObserved": true
   },
-  "remainingVerification": [
-    "Signed-in deployed English/Persian RTL UI, private attachment/provider inspection and preserved thread",
-    "Delivery-event worker completion and duplicate absence",
-    "Gmail Inbox observation of notification7"
-  ],
+  "remainingVerification": [],
   "previousHealthyImageId": "sha256:d0c6896a734bb18d10a3f2d307557479197b076ba345ebf57a8c79177796b698",
   "previousOciRevision": "9353fa2bb542e343cbce5b1f9a0686f890e0fc49",
-  "productionCorrespondenceDeleted": false
+  "productionCorrespondenceDeleted": false,
+  "deployedAdminVerification": {
+    "authorizedBraveSession": true,
+    "englishLtr": true,
+    "persianRtl": true,
+    "threePaneLayout": true,
+    "hostNavigationPreserved": true,
+    "initialPersianPreferenceRestored": true,
+    "ownedProviderInspection": true,
+    "providerReportedGmailSmtp250AndTls": true,
+    "queueMessageCount": 0,
+    "failedMessageCount": 0,
+    "privateAttachment": {
+      "authorizedDownload": true,
+      "bytes": 146,
+      "sha256": "80d2dfd426a91b0cbc001bd0aa9868c88ce6c062f42cd04242ec629222648d54",
+      "matchesControlledOriginal": true,
+      "anonymousStatus": 403
+    }
+  },
+  "npmPublished": false,
+  "notes": [
+    "The earlier controlled support/Gmail round trip was not resent.",
+    "One historical delivery callback and its exact duplicate both acknowledged; exactly one outgoing message and delivered history entry observed.",
+    "No production credentials, cookies, raw headers, mail bodies or screenshots included.",
+    "The denied SSH database follow-up was not bypassed; actual authorized UI independently verified completion."
+  ]
 }
